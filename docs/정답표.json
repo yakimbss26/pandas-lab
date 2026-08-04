@@ -1,0 +1,3007 @@
+{
+ "ramen-ratings.csv": {
+  "path": "C:\\pandas\\수업자료\\ramen-ratings.csv",
+  "bytes": 158316,
+  "shape": [
+   2580,
+   7
+  ],
+  "columns": [
+   "Review #",
+   "Brand",
+   "Variety",
+   "Style",
+   "Country",
+   "Stars",
+   "Top Ten"
+  ],
+  "dtypes": {
+   "Review #": "int64",
+   "Brand": "str",
+   "Variety": "str",
+   "Style": "str",
+   "Country": "str",
+   "Stars": "str",
+   "Top Ten": "str"
+  },
+  "na_counts": {
+   "Review #": 0,
+   "Brand": 0,
+   "Variety": 0,
+   "Style": 2,
+   "Country": 0,
+   "Stars": 0,
+   "Top Ten": 2539
+  },
+  "nunique": {
+   "Review #": 2580,
+   "Brand": 355,
+   "Variety": 2413,
+   "Style": 7,
+   "Country": 38,
+   "Stars": 51,
+   "Top Ten": 38
+  },
+  "memory_bytes": 868515,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "Review #": {
+    "count": 2580,
+    "mean": 1290.5,
+    "std": 744.9261708384261,
+    "std_pop": 744.7817913098215,
+    "min": 1.0,
+    "q25": 645.75,
+    "median": 1290.5,
+    "q75": 1935.25,
+    "max": 2580.0,
+    "sum": 3329490.0
+   }
+  },
+  "categorical": {
+   "Brand": {
+    "nunique": 355,
+    "top_20": [
+     [
+      "Nissin",
+      381
+     ],
+     [
+      "Nongshim",
+      98
+     ],
+     [
+      "Maruchan",
+      76
+     ],
+     [
+      "Mama",
+      71
+     ],
+     [
+      "Paldo",
+      66
+     ],
+     [
+      "Myojo",
+      63
+     ],
+     [
+      "Indomie",
+      53
+     ],
+     [
+      "Samyang Foods",
+      52
+     ],
+     [
+      "Ottogi",
+      46
+     ],
+     [
+      "Vina Acecook",
+      34
+     ],
+     [
+      "Lucky Me!",
+      34
+     ],
+     [
+      "Vifon",
+      33
+     ],
+     [
+      "Maggi",
+      30
+     ],
+     [
+      "Mamee",
+      29
+     ],
+     [
+      "Master Kong",
+      28
+     ],
+     [
+      "MAMA",
+      27
+     ],
+     [
+      "A-Sha Dry Noodle",
+      26
+     ],
+     [
+      "KOKA",
+      25
+     ],
+     [
+      "Wai Wai",
+      25
+     ],
+     [
+      "Sapporo Ichiban",
+      25
+     ]
+    ]
+   },
+   "Variety": {
+    "nunique": 2413,
+    "top_20": [
+     [
+      "Beef",
+      7
+     ],
+     [
+      "Chicken",
+      7
+     ],
+     [
+      "Yakisoba",
+      6
+     ],
+     [
+      "Vegetable",
+      6
+     ],
+     [
+      "Artificial Chicken",
+      6
+     ],
+     [
+      "Miso Ramen",
+      5
+     ],
+     [
+      "Curry Flavour Instant Noodles",
+      4
+     ],
+     [
+      "Curry Udon",
+      4
+     ],
+     [
+      "Instant Noodles Chicken Flavour",
+      4
+     ],
+     [
+      "Spicy Beef",
+      4
+     ],
+     [
+      "Artificial Spicy Beef",
+      4
+     ],
+     [
+      "Artificial Beef Flavor",
+      4
+     ],
+     [
+      "Kitsune Udon",
+      3
+     ],
+     [
+      "Soy Sauce",
+      3
+     ],
+     [
+      "Instant Noodles Beef Flavour",
+      3
+     ],
+     [
+      "Kimchi",
+      3
+     ],
+     [
+      "Kokomen Spicy Chicken",
+      3
+     ],
+     [
+      "Imitation Chicken Vegetarian",
+      3
+     ],
+     [
+      "Mi Chay Vegetarian",
+      3
+     ],
+     [
+      "Vegetarian Tom Yum",
+      3
+     ]
+    ]
+   },
+   "Style": {
+    "nunique": 7,
+    "top_20": [
+     [
+      "Pack",
+      1531
+     ],
+     [
+      "Bowl",
+      481
+     ],
+     [
+      "Cup",
+      450
+     ],
+     [
+      "Tray",
+      108
+     ],
+     [
+      "Box",
+      6
+     ],
+     [
+      "nan",
+      2
+     ],
+     [
+      "Can",
+      1
+     ],
+     [
+      "Bar",
+      1
+     ]
+    ]
+   },
+   "Country": {
+    "nunique": 38,
+    "top_20": [
+     [
+      "Japan",
+      352
+     ],
+     [
+      "USA",
+      323
+     ],
+     [
+      "South Korea",
+      309
+     ],
+     [
+      "Taiwan",
+      224
+     ],
+     [
+      "Thailand",
+      191
+     ],
+     [
+      "China",
+      169
+     ],
+     [
+      "Malaysia",
+      156
+     ],
+     [
+      "Hong Kong",
+      137
+     ],
+     [
+      "Indonesia",
+      126
+     ],
+     [
+      "Singapore",
+      109
+     ],
+     [
+      "Vietnam",
+      108
+     ],
+     [
+      "UK",
+      69
+     ],
+     [
+      "Philippines",
+      47
+     ],
+     [
+      "Canada",
+      41
+     ],
+     [
+      "India",
+      31
+     ],
+     [
+      "Germany",
+      27
+     ],
+     [
+      "Mexico",
+      25
+     ],
+     [
+      "Australia",
+      22
+     ],
+     [
+      "Netherlands",
+      15
+     ],
+     [
+      "Nepal",
+      14
+     ]
+    ]
+   },
+   "Stars": {
+    "nunique": 51,
+    "top_20": [
+     [
+      "4",
+      384
+     ],
+     [
+      "5",
+      369
+     ],
+     [
+      "3.75",
+      350
+     ],
+     [
+      "3.5",
+      326
+     ],
+     [
+      "3",
+      173
+     ],
+     [
+      "3.25",
+      170
+     ],
+     [
+      "4.25",
+      143
+     ],
+     [
+      "4.5",
+      132
+     ],
+     [
+      "2.75",
+      85
+     ],
+     [
+      "2",
+      68
+     ],
+     [
+      "2.5",
+      67
+     ],
+     [
+      "4.75",
+      64
+     ],
+     [
+      "1.5",
+      37
+     ],
+     [
+      "1.75",
+      27
+     ],
+     [
+      "1",
+      26
+     ],
+     [
+      "0",
+      26
+     ],
+     [
+      "2.25",
+      21
+     ],
+     [
+      "0.5",
+      14
+     ],
+     [
+      "0.25",
+      11
+     ],
+     [
+      "5.0",
+      10
+     ]
+    ]
+   },
+   "Top Ten": {
+    "nunique": 38,
+    "top_20": [
+     [
+      "nan",
+      2539
+     ],
+     [
+      "\n",
+      4
+     ],
+     [
+      "2016 #10",
+      1
+     ],
+     [
+      "2016 #1",
+      1
+     ],
+     [
+      "2016 #8",
+      1
+     ],
+     [
+      "2016 #5",
+      1
+     ],
+     [
+      "2016 #9",
+      1
+     ],
+     [
+      "2016 #7",
+      1
+     ],
+     [
+      "2015 #10",
+      1
+     ],
+     [
+      "2015 #7",
+      1
+     ],
+     [
+      "2015 #4",
+      1
+     ],
+     [
+      "2015 #9",
+      1
+     ],
+     [
+      "2015 #6",
+      1
+     ],
+     [
+      "2015 #1",
+      1
+     ],
+     [
+      "2013 #10",
+      1
+     ],
+     [
+      "2015 #8",
+      1
+     ],
+     [
+      "2014 #7",
+      1
+     ],
+     [
+      "2014 #4",
+      1
+     ],
+     [
+      "2014 #9",
+      1
+     ],
+     [
+      "2014 #10",
+      1
+     ]
+    ]
+   }
+  },
+  "head5": [
+   {
+    "Review #": 2580,
+    "Brand": "New Touch",
+    "Variety": "T's Restaurant Tantanmen ",
+    "Style": "Cup",
+    "Country": "Japan",
+    "Stars": "3.75",
+    "Top Ten": NaN
+   },
+   {
+    "Review #": 2579,
+    "Brand": "Just Way",
+    "Variety": "Noodles Spicy Hot Sesame Spicy Hot Sesame Guan-miao Noodles",
+    "Style": "Pack",
+    "Country": "Taiwan",
+    "Stars": "1",
+    "Top Ten": NaN
+   },
+   {
+    "Review #": 2578,
+    "Brand": "Nissin",
+    "Variety": "Cup Noodles Chicken Vegetable",
+    "Style": "Cup",
+    "Country": "USA",
+    "Stars": "2.25",
+    "Top Ten": NaN
+   },
+   {
+    "Review #": 2577,
+    "Brand": "Wei Lih",
+    "Variety": "GGE Ramen Snack Tomato Flavor",
+    "Style": "Pack",
+    "Country": "Taiwan",
+    "Stars": "2.75",
+    "Top Ten": NaN
+   },
+   {
+    "Review #": 2576,
+    "Brand": "Ching's Secret",
+    "Variety": "Singapore Curry",
+    "Style": "Pack",
+    "Country": "India",
+    "Stars": "3.75",
+    "Top Ten": NaN
+   }
+  ]
+ },
+ "train.csv": {
+  "path": "C:\\pandas\\수업자료\\train.csv",
+  "bytes": 61194,
+  "shape": [
+   891,
+   12
+  ],
+  "columns": [
+   "PassengerId",
+   "Survived",
+   "Pclass",
+   "Name",
+   "Sex",
+   "Age",
+   "SibSp",
+   "Parch",
+   "Ticket",
+   "Fare",
+   "Cabin",
+   "Embarked"
+  ],
+  "dtypes": {
+   "PassengerId": "int64",
+   "Survived": "int64",
+   "Pclass": "int64",
+   "Name": "str",
+   "Sex": "str",
+   "Age": "float64",
+   "SibSp": "int64",
+   "Parch": "int64",
+   "Ticket": "str",
+   "Fare": "float64",
+   "Cabin": "str",
+   "Embarked": "str"
+  },
+  "na_counts": {
+   "PassengerId": 0,
+   "Survived": 0,
+   "Pclass": 0,
+   "Name": 0,
+   "Sex": 0,
+   "Age": 177,
+   "SibSp": 0,
+   "Parch": 0,
+   "Ticket": 0,
+   "Fare": 0,
+   "Cabin": 687,
+   "Embarked": 2
+  },
+  "nunique": {
+   "PassengerId": 891,
+   "Survived": 2,
+   "Pclass": 3,
+   "Name": 891,
+   "Sex": 2,
+   "Age": 88,
+   "SibSp": 7,
+   "Parch": 7,
+   "Ticket": 681,
+   "Fare": 248,
+   "Cabin": 147,
+   "Embarked": 3
+  },
+  "memory_bytes": 292464,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "PassengerId": {
+    "count": 891,
+    "mean": 446.0,
+    "std": 257.3538420152301,
+    "std_pop": 257.20938292890224,
+    "min": 1.0,
+    "q25": 223.5,
+    "median": 446.0,
+    "q75": 668.5,
+    "max": 891.0,
+    "sum": 397386.0
+   },
+   "Survived": {
+    "count": 891,
+    "mean": 0.3838383838383838,
+    "std": 0.4865924542648575,
+    "std_pop": 0.48631931786709987,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 1.0,
+    "max": 1.0,
+    "sum": 342.0
+   },
+   "Pclass": {
+    "count": 891,
+    "mean": 2.308641975308642,
+    "std": 0.836071240977049,
+    "std_pop": 0.8356019334795166,
+    "min": 1.0,
+    "q25": 2.0,
+    "median": 3.0,
+    "q75": 3.0,
+    "max": 3.0,
+    "sum": 2057.0
+   },
+   "Age": {
+    "count": 714,
+    "mean": 29.69911764705882,
+    "std": 14.526497332334042,
+    "std_pop": 14.516321150817316,
+    "min": 0.42,
+    "q25": 20.125,
+    "median": 28.0,
+    "q75": 38.0,
+    "max": 80.0,
+    "sum": 21205.17
+   },
+   "SibSp": {
+    "count": 891,
+    "mean": 0.5230078563411896,
+    "std": 1.1027434322934317,
+    "std_pop": 1.1021244350892878,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 1.0,
+    "max": 8.0,
+    "sum": 466.0
+   },
+   "Parch": {
+    "count": 891,
+    "mean": 0.38159371492704824,
+    "std": 0.8060572211299483,
+    "std_pop": 0.8056047612452208,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 0.0,
+    "max": 6.0,
+    "sum": 340.0
+   },
+   "Fare": {
+    "count": 891,
+    "mean": 32.204207968574636,
+    "std": 49.6934285971809,
+    "std_pop": 49.6655344447741,
+    "min": 0.0,
+    "q25": 7.9104,
+    "median": 14.4542,
+    "q75": 31.0,
+    "max": 512.3292,
+    "sum": 28693.9493
+   }
+  },
+  "categorical": {
+   "Name": {
+    "nunique": 891,
+    "top_20": [
+     [
+      "Braund, Mr. Owen Harris",
+      1
+     ],
+     [
+      "Cumings, Mrs. John Bradley (Florence Briggs Thayer)",
+      1
+     ],
+     [
+      "Heikkinen, Miss. Laina",
+      1
+     ],
+     [
+      "Futrelle, Mrs. Jacques Heath (Lily May Peel)",
+      1
+     ],
+     [
+      "Allen, Mr. William Henry",
+      1
+     ],
+     [
+      "Moran, Mr. James",
+      1
+     ],
+     [
+      "McCarthy, Mr. Timothy J",
+      1
+     ],
+     [
+      "Palsson, Master. Gosta Leonard",
+      1
+     ],
+     [
+      "Johnson, Mrs. Oscar W (Elisabeth Vilhelmina Berg)",
+      1
+     ],
+     [
+      "Nasser, Mrs. Nicholas (Adele Achem)",
+      1
+     ],
+     [
+      "Sandstrom, Miss. Marguerite Rut",
+      1
+     ],
+     [
+      "Bonnell, Miss. Elizabeth",
+      1
+     ],
+     [
+      "Saundercock, Mr. William Henry",
+      1
+     ],
+     [
+      "Andersson, Mr. Anders Johan",
+      1
+     ],
+     [
+      "Vestrom, Miss. Hulda Amanda Adolfina",
+      1
+     ],
+     [
+      "Hewlett, Mrs. (Mary D Kingcome) ",
+      1
+     ],
+     [
+      "Rice, Master. Eugene",
+      1
+     ],
+     [
+      "Williams, Mr. Charles Eugene",
+      1
+     ],
+     [
+      "Vander Planke, Mrs. Julius (Emelia Maria Vandemoortele)",
+      1
+     ],
+     [
+      "Masselmani, Mrs. Fatima",
+      1
+     ]
+    ]
+   },
+   "Sex": {
+    "nunique": 2,
+    "top_20": [
+     [
+      "male",
+      577
+     ],
+     [
+      "female",
+      314
+     ]
+    ]
+   },
+   "Ticket": {
+    "nunique": 681,
+    "top_20": [
+     [
+      "347082",
+      7
+     ],
+     [
+      "1601",
+      7
+     ],
+     [
+      "CA. 2343",
+      7
+     ],
+     [
+      "3101295",
+      6
+     ],
+     [
+      "CA 2144",
+      6
+     ],
+     [
+      "347088",
+      6
+     ],
+     [
+      "382652",
+      5
+     ],
+     [
+      "S.O.C. 14879",
+      5
+     ],
+     [
+      "349909",
+      4
+     ],
+     [
+      "347077",
+      4
+     ],
+     [
+      "19950",
+      4
+     ],
+     [
+      "W./C. 6608",
+      4
+     ],
+     [
+      "4133",
+      4
+     ],
+     [
+      "LINE",
+      4
+     ],
+     [
+      "113781",
+      4
+     ],
+     [
+      "17421",
+      4
+     ],
+     [
+      "PC 17757",
+      4
+     ],
+     [
+      "113760",
+      4
+     ],
+     [
+      "2666",
+      4
+     ],
+     [
+      "347742",
+      3
+     ]
+    ]
+   },
+   "Cabin": {
+    "nunique": 147,
+    "top_20": [
+     [
+      "nan",
+      687
+     ],
+     [
+      "G6",
+      4
+     ],
+     [
+      "C23 C25 C27",
+      4
+     ],
+     [
+      "B96 B98",
+      4
+     ],
+     [
+      "F33",
+      3
+     ],
+     [
+      "E101",
+      3
+     ],
+     [
+      "F2",
+      3
+     ],
+     [
+      "D",
+      3
+     ],
+     [
+      "C22 C26",
+      3
+     ],
+     [
+      "C123",
+      2
+     ],
+     [
+      "D33",
+      2
+     ],
+     [
+      "C52",
+      2
+     ],
+     [
+      "B28",
+      2
+     ],
+     [
+      "C83",
+      2
+     ],
+     [
+      "F G73",
+      2
+     ],
+     [
+      "D26",
+      2
+     ],
+     [
+      "B58 B60",
+      2
+     ],
+     [
+      "C2",
+      2
+     ],
+     [
+      "E33",
+      2
+     ],
+     [
+      "F4",
+      2
+     ]
+    ]
+   },
+   "Embarked": {
+    "nunique": 3,
+    "top_20": [
+     [
+      "S",
+      644
+     ],
+     [
+      "C",
+      168
+     ],
+     [
+      "Q",
+      77
+     ],
+     [
+      "nan",
+      2
+     ]
+    ]
+   }
+  },
+  "head5": [
+   {
+    "PassengerId": 1,
+    "Survived": 0,
+    "Pclass": 3,
+    "Name": "Braund, Mr. Owen Harris",
+    "Sex": "male",
+    "Age": 22.0,
+    "SibSp": 1,
+    "Parch": 0,
+    "Ticket": "A/5 21171",
+    "Fare": 7.25,
+    "Cabin": NaN,
+    "Embarked": "S"
+   },
+   {
+    "PassengerId": 2,
+    "Survived": 1,
+    "Pclass": 1,
+    "Name": "Cumings, Mrs. John Bradley (Florence Briggs Thayer)",
+    "Sex": "female",
+    "Age": 38.0,
+    "SibSp": 1,
+    "Parch": 0,
+    "Ticket": "PC 17599",
+    "Fare": 71.2833,
+    "Cabin": "C85",
+    "Embarked": "C"
+   },
+   {
+    "PassengerId": 3,
+    "Survived": 1,
+    "Pclass": 3,
+    "Name": "Heikkinen, Miss. Laina",
+    "Sex": "female",
+    "Age": 26.0,
+    "SibSp": 0,
+    "Parch": 0,
+    "Ticket": "STON/O2. 3101282",
+    "Fare": 7.925,
+    "Cabin": NaN,
+    "Embarked": "S"
+   },
+   {
+    "PassengerId": 4,
+    "Survived": 1,
+    "Pclass": 1,
+    "Name": "Futrelle, Mrs. Jacques Heath (Lily May Peel)",
+    "Sex": "female",
+    "Age": 35.0,
+    "SibSp": 1,
+    "Parch": 0,
+    "Ticket": "113803",
+    "Fare": 53.1,
+    "Cabin": "C123",
+    "Embarked": "S"
+   },
+   {
+    "PassengerId": 5,
+    "Survived": 0,
+    "Pclass": 3,
+    "Name": "Allen, Mr. William Henry",
+    "Sex": "male",
+    "Age": 35.0,
+    "SibSp": 0,
+    "Parch": 0,
+    "Ticket": "373450",
+    "Fare": 8.05,
+    "Cabin": NaN,
+    "Embarked": "S"
+   }
+  ]
+ },
+ "test.csv": {
+  "path": "C:\\pandas\\수업자료\\test.csv",
+  "bytes": 28629,
+  "shape": [
+   418,
+   11
+  ],
+  "columns": [
+   "PassengerId",
+   "Pclass",
+   "Name",
+   "Sex",
+   "Age",
+   "SibSp",
+   "Parch",
+   "Ticket",
+   "Fare",
+   "Cabin",
+   "Embarked"
+  ],
+  "dtypes": {
+   "PassengerId": "int64",
+   "Pclass": "int64",
+   "Name": "str",
+   "Sex": "str",
+   "Age": "float64",
+   "SibSp": "int64",
+   "Parch": "int64",
+   "Ticket": "str",
+   "Fare": "float64",
+   "Cabin": "str",
+   "Embarked": "str"
+  },
+  "na_counts": {
+   "PassengerId": 0,
+   "Pclass": 0,
+   "Name": 0,
+   "Sex": 0,
+   "Age": 86,
+   "SibSp": 0,
+   "Parch": 0,
+   "Ticket": 0,
+   "Fare": 1,
+   "Cabin": 327,
+   "Embarked": 0
+  },
+  "nunique": {
+   "PassengerId": 418,
+   "Pclass": 3,
+   "Name": 418,
+   "Sex": 2,
+   "Age": 79,
+   "SibSp": 7,
+   "Parch": 8,
+   "Ticket": 363,
+   "Fare": 169,
+   "Cabin": 76,
+   "Embarked": 3
+  },
+  "memory_bytes": 134174,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "PassengerId": {
+    "count": 418,
+    "mean": 1100.5,
+    "std": 120.81045760473994,
+    "std_pop": 120.66586095495279,
+    "min": 892.0,
+    "q25": 996.25,
+    "median": 1100.5,
+    "q75": 1204.75,
+    "max": 1309.0,
+    "sum": 460009.0
+   },
+   "Pclass": {
+    "count": 418,
+    "mean": 2.2655502392344498,
+    "std": 0.8418375519640503,
+    "std_pop": 0.8408299662625105,
+    "min": 1.0,
+    "q25": 1.0,
+    "median": 3.0,
+    "q75": 3.0,
+    "max": 3.0,
+    "sum": 947.0
+   },
+   "Age": {
+    "count": 332,
+    "mean": 30.272590361445783,
+    "std": 14.181209235624422,
+    "std_pop": 14.159835886272559,
+    "min": 0.17,
+    "q25": 21.0,
+    "median": 27.0,
+    "q75": 39.0,
+    "max": 76.0,
+    "sum": 10050.5
+   },
+   "SibSp": {
+    "count": 418,
+    "mean": 0.4473684210526316,
+    "std": 0.8967595611217135,
+    "std_pop": 0.8956862398979247,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 1.0,
+    "max": 8.0,
+    "sum": 187.0
+   },
+   "Parch": {
+    "count": 418,
+    "mean": 0.3923444976076555,
+    "std": 0.9814288785371691,
+    "std_pop": 0.9802542175793807,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 0.0,
+    "max": 9.0,
+    "sum": 164.0
+   },
+   "Fare": {
+    "count": 417,
+    "mean": 35.627188489208635,
+    "std": 55.907576179973844,
+    "std_pop": 55.840500479541035,
+    "min": 0.0,
+    "q25": 7.8958,
+    "median": 14.4542,
+    "q75": 31.5,
+    "max": 512.3292,
+    "sum": 14856.5376
+   }
+  },
+  "categorical": {
+   "Name": {
+    "nunique": 418,
+    "top_20": [
+     [
+      "Kelly, Mr. James",
+      1
+     ],
+     [
+      "Wilkes, Mrs. James (Ellen Needs)",
+      1
+     ],
+     [
+      "Myles, Mr. Thomas Francis",
+      1
+     ],
+     [
+      "Wirz, Mr. Albert",
+      1
+     ],
+     [
+      "Hirvonen, Mrs. Alexander (Helga E Lindqvist)",
+      1
+     ],
+     [
+      "Svensson, Mr. Johan Cervin",
+      1
+     ],
+     [
+      "Connolly, Miss. Kate",
+      1
+     ],
+     [
+      "Caldwell, Mr. Albert Francis",
+      1
+     ],
+     [
+      "Abrahim, Mrs. Joseph (Sophie Halaut Easu)",
+      1
+     ],
+     [
+      "Davies, Mr. John Samuel",
+      1
+     ],
+     [
+      "Ilieff, Mr. Ylio",
+      1
+     ],
+     [
+      "Jones, Mr. Charles Cresson",
+      1
+     ],
+     [
+      "Snyder, Mrs. John Pillsbury (Nelle Stevenson)",
+      1
+     ],
+     [
+      "Howard, Mr. Benjamin",
+      1
+     ],
+     [
+      "Chaffee, Mrs. Herbert Fuller (Carrie Constance Toogood)",
+      1
+     ],
+     [
+      "del Carlo, Mrs. Sebastiano (Argenia Genovesi)",
+      1
+     ],
+     [
+      "Keane, Mr. Daniel",
+      1
+     ],
+     [
+      "Assaf, Mr. Gerios",
+      1
+     ],
+     [
+      "Ilmakangas, Miss. Ida Livija",
+      1
+     ],
+     [
+      "Assaf Khalil, Mrs. Mariana (Miriam\")\"",
+      1
+     ]
+    ]
+   },
+   "Sex": {
+    "nunique": 2,
+    "top_20": [
+     [
+      "male",
+      266
+     ],
+     [
+      "female",
+      152
+     ]
+    ]
+   },
+   "Ticket": {
+    "nunique": 363,
+    "top_20": [
+     [
+      "PC 17608",
+      5
+     ],
+     [
+      "113503",
+      4
+     ],
+     [
+      "CA. 2343",
+      4
+     ],
+     [
+      "C.A. 31029",
+      3
+     ],
+     [
+      "PC 17483",
+      3
+     ],
+     [
+      "347077",
+      3
+     ],
+     [
+      "SOTON/O.Q. 3101315",
+      3
+     ],
+     [
+      "16966",
+      3
+     ],
+     [
+      "220845",
+      3
+     ],
+     [
+      "21228",
+      2
+     ],
+     [
+      "24065",
+      2
+     ],
+     [
+      "2662",
+      2
+     ],
+     [
+      "C.A. 2315",
+      2
+     ],
+     [
+      "W./C. 6607",
+      2
+     ],
+     [
+      "13236",
+      2
+     ],
+     [
+      "13695",
+      2
+     ],
+     [
+      "19950",
+      2
+     ],
+     [
+      "F.C.C. 13534",
+      2
+     ],
+     [
+      "2660",
+      2
+     ],
+     [
+      "29103",
+      2
+     ]
+    ]
+   },
+   "Cabin": {
+    "nunique": 76,
+    "top_20": [
+     [
+      "nan",
+      327
+     ],
+     [
+      "B57 B59 B63 B66",
+      3
+     ],
+     [
+      "B45",
+      2
+     ],
+     [
+      "C78",
+      2
+     ],
+     [
+      "C31",
+      2
+     ],
+     [
+      "C23 C25 C27",
+      2
+     ],
+     [
+      "C101",
+      2
+     ],
+     [
+      "C55 C57",
+      2
+     ],
+     [
+      "C116",
+      2
+     ],
+     [
+      "C6",
+      2
+     ],
+     [
+      "F4",
+      2
+     ],
+     [
+      "E34",
+      2
+     ],
+     [
+      "C80",
+      2
+     ],
+     [
+      "C89",
+      2
+     ],
+     [
+      "A34",
+      2
+     ],
+     [
+      "E31",
+      1
+     ],
+     [
+      "B36",
+      1
+     ],
+     [
+      "A21",
+      1
+     ],
+     [
+      "D34",
+      1
+     ],
+     [
+      "D19",
+      1
+     ]
+    ]
+   },
+   "Embarked": {
+    "nunique": 3,
+    "top_20": [
+     [
+      "S",
+      270
+     ],
+     [
+      "C",
+      102
+     ],
+     [
+      "Q",
+      46
+     ]
+    ]
+   }
+  },
+  "head5": [
+   {
+    "PassengerId": 892,
+    "Pclass": 3,
+    "Name": "Kelly, Mr. James",
+    "Sex": "male",
+    "Age": 34.5,
+    "SibSp": 0,
+    "Parch": 0,
+    "Ticket": "330911",
+    "Fare": 7.8292,
+    "Cabin": NaN,
+    "Embarked": "Q"
+   },
+   {
+    "PassengerId": 893,
+    "Pclass": 3,
+    "Name": "Wilkes, Mrs. James (Ellen Needs)",
+    "Sex": "female",
+    "Age": 47.0,
+    "SibSp": 1,
+    "Parch": 0,
+    "Ticket": "363272",
+    "Fare": 7.0,
+    "Cabin": NaN,
+    "Embarked": "S"
+   },
+   {
+    "PassengerId": 894,
+    "Pclass": 2,
+    "Name": "Myles, Mr. Thomas Francis",
+    "Sex": "male",
+    "Age": 62.0,
+    "SibSp": 0,
+    "Parch": 0,
+    "Ticket": "240276",
+    "Fare": 9.6875,
+    "Cabin": NaN,
+    "Embarked": "Q"
+   },
+   {
+    "PassengerId": 895,
+    "Pclass": 3,
+    "Name": "Wirz, Mr. Albert",
+    "Sex": "male",
+    "Age": 27.0,
+    "SibSp": 0,
+    "Parch": 0,
+    "Ticket": "315154",
+    "Fare": 8.6625,
+    "Cabin": NaN,
+    "Embarked": "S"
+   },
+   {
+    "PassengerId": 896,
+    "Pclass": 3,
+    "Name": "Hirvonen, Mrs. Alexander (Helga E Lindqvist)",
+    "Sex": "female",
+    "Age": 22.0,
+    "SibSp": 1,
+    "Parch": 1,
+    "Ticket": "3101298",
+    "Fare": 12.2875,
+    "Cabin": NaN,
+    "Embarked": "S"
+   }
+  ]
+ },
+ "gender_submission.csv": {
+  "path": "C:\\pandas\\수업자료\\gender_submission.csv",
+  "bytes": 3258,
+  "shape": [
+   418,
+   2
+  ],
+  "columns": [
+   "PassengerId",
+   "Survived"
+  ],
+  "dtypes": {
+   "PassengerId": "int64",
+   "Survived": "int64"
+  },
+  "na_counts": {
+   "PassengerId": 0,
+   "Survived": 0
+  },
+  "nunique": {
+   "PassengerId": 418,
+   "Survived": 2
+  },
+  "memory_bytes": 6820,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "PassengerId": {
+    "count": 418,
+    "mean": 1100.5,
+    "std": 120.81045760473994,
+    "std_pop": 120.66586095495279,
+    "min": 892.0,
+    "q25": 996.25,
+    "median": 1100.5,
+    "q75": 1204.75,
+    "max": 1309.0,
+    "sum": 460009.0
+   },
+   "Survived": {
+    "count": 418,
+    "mean": 0.36363636363636365,
+    "std": 0.4816221409322309,
+    "std_pop": 0.48104569292083466,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 1.0,
+    "max": 1.0,
+    "sum": 152.0
+   }
+  },
+  "categorical": {},
+  "head5": [
+   {
+    "PassengerId": 892,
+    "Survived": 0
+   },
+   {
+    "PassengerId": 893,
+    "Survived": 1
+   },
+   {
+    "PassengerId": 894,
+    "Survived": 0
+   },
+   {
+    "PassengerId": 895,
+    "Survived": 0
+   },
+   {
+    "PassengerId": 896,
+    "Survived": 1
+   }
+  ]
+ },
+ "abalone.csv": {
+  "path": "C:\\pandas\\수업자료\\abalone.csv",
+  "bytes": 187780,
+  "shape": [
+   4177,
+   8
+  ],
+  "columns": [
+   "길이",
+   "직경",
+   "두께",
+   "전체무게",
+   "내장무게",
+   "껍질무게",
+   "나이테",
+   "순살무게"
+  ],
+  "dtypes": {
+   "길이": "float64",
+   "직경": "float64",
+   "두께": "float64",
+   "전체무게": "float64",
+   "내장무게": "float64",
+   "껍질무게": "float64",
+   "나이테": "int64",
+   "순살무게": "float64"
+  },
+  "na_counts": {
+   "길이": 0,
+   "직경": 0,
+   "두께": 0,
+   "전체무게": 0,
+   "내장무게": 0,
+   "껍질무게": 0,
+   "나이테": 0,
+   "순살무게": 0
+  },
+  "nunique": {
+   "길이": 134,
+   "직경": 111,
+   "두께": 51,
+   "전체무게": 2429,
+   "내장무게": 880,
+   "껍질무게": 926,
+   "나이테": 28,
+   "순살무게": 1515
+  },
+  "memory_bytes": 267460,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "길이": {
+    "count": 4177,
+    "mean": 0.5239920995930094,
+    "std": 0.12009291256479956,
+    "std_pop": 0.12007853620602839,
+    "min": 0.075,
+    "q25": 0.45,
+    "median": 0.545,
+    "q75": 0.615,
+    "max": 0.815,
+    "sum": 2188.715
+   },
+   "직경": {
+    "count": 4177,
+    "mean": 0.40788125448886764,
+    "std": 0.09923986613365945,
+    "std_pop": 0.09922798609936374,
+    "min": 0.055,
+    "q25": 0.35,
+    "median": 0.425,
+    "q75": 0.48,
+    "max": 0.65,
+    "sum": 1703.72
+   },
+   "두께": {
+    "count": 4177,
+    "mean": 0.13951639932966242,
+    "std": 0.041827056607257274,
+    "std_pop": 0.04182204947769995,
+    "min": 0.0,
+    "q25": 0.115,
+    "median": 0.14,
+    "q75": 0.165,
+    "max": 1.13,
+    "sum": 582.76
+   },
+   "전체무게": {
+    "count": 4177,
+    "mean": 0.8287421594445774,
+    "std": 0.4903890182309977,
+    "std_pop": 0.4903303136137728,
+    "min": 0.002,
+    "q25": 0.4415,
+    "median": 0.7995,
+    "q75": 1.153,
+    "max": 2.8255,
+    "sum": 3461.656
+   },
+   "내장무게": {
+    "count": 4177,
+    "mean": 0.1805936078525257,
+    "std": 0.10961425025968446,
+    "std_pop": 0.10960112830473714,
+    "min": 0.0005,
+    "q25": 0.0935,
+    "median": 0.171,
+    "q75": 0.253,
+    "max": 0.76,
+    "sum": 754.3394999999999
+   },
+   "껍질무게": {
+    "count": 4177,
+    "mean": 0.23883085946851804,
+    "std": 0.1392026695223861,
+    "std_pop": 0.13918600552884794,
+    "min": 0.0015,
+    "q25": 0.13,
+    "median": 0.234,
+    "q75": 0.329,
+    "max": 1.005,
+    "sum": 997.5964999999999
+   },
+   "나이테": {
+    "count": 4177,
+    "mean": 9.933684462532918,
+    "std": 3.2241690320681284,
+    "std_pop": 3.2237830658212117,
+    "min": 1.0,
+    "q25": 8.0,
+    "median": 9.0,
+    "q75": 11.0,
+    "max": 29.0,
+    "sum": 41493.0
+   },
+   "순살무게": {
+    "count": 4177,
+    "mean": 0.35936748862820206,
+    "std": 0.22196294903322014,
+    "std_pop": 0.22193637778166947,
+    "min": 0.001,
+    "q25": 0.186,
+    "median": 0.336,
+    "q75": 0.502,
+    "max": 1.488,
+    "sum": 1501.078
+   }
+  },
+  "categorical": {},
+  "head5": [
+   {
+    "길이": 0.455,
+    "직경": 0.365,
+    "두께": 0.095,
+    "전체무게": 0.514,
+    "내장무게": 0.101,
+    "껍질무게": 0.15,
+    "나이테": 15,
+    "순살무게": 0.2245
+   },
+   {
+    "길이": 0.35,
+    "직경": 0.265,
+    "두께": 0.09,
+    "전체무게": 0.2255,
+    "내장무게": 0.0485,
+    "껍질무게": 0.07,
+    "나이테": 7,
+    "순살무게": 0.0995
+   },
+   {
+    "길이": 0.53,
+    "직경": 0.42,
+    "두께": 0.135,
+    "전체무게": 0.677,
+    "내장무게": 0.1415,
+    "껍질무게": 0.21,
+    "나이테": 9,
+    "순살무게": 0.2565
+   },
+   {
+    "길이": 0.44,
+    "직경": 0.365,
+    "두께": 0.125,
+    "전체무게": 0.516,
+    "내장무게": 0.114,
+    "껍질무게": 0.155,
+    "나이테": 10,
+    "순살무게": 0.2155
+   },
+   {
+    "길이": 0.33,
+    "직경": 0.255,
+    "두께": 0.08,
+    "전체무게": 0.205,
+    "내장무게": 0.0395,
+    "껍질무게": 0.055,
+    "나이테": 7,
+    "순살무게": 0.0895
+   }
+  ]
+ },
+ "housing.data": {
+  "path": "C:\\pandas\\수업자료\\housing.data",
+  "bytes": 49082,
+  "shape": [
+   506,
+   14
+  ],
+  "columns": [
+   "0",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8",
+   "9",
+   "10",
+   "11",
+   "12",
+   "13"
+  ],
+  "dtypes": {
+   "0": "float64",
+   "1": "float64",
+   "2": "float64",
+   "3": "int64",
+   "4": "float64",
+   "5": "float64",
+   "6": "float64",
+   "7": "float64",
+   "8": "int64",
+   "9": "float64",
+   "10": "float64",
+   "11": "float64",
+   "12": "float64",
+   "13": "float64"
+  },
+  "na_counts": {
+   "0": 0,
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0,
+   "5": 0,
+   "6": 0,
+   "7": 0,
+   "8": 0,
+   "9": 0,
+   "10": 0,
+   "11": 0,
+   "12": 0,
+   "13": 0
+  },
+  "nunique": {
+   "0": 504,
+   "1": 26,
+   "2": 76,
+   "3": 2,
+   "4": 81,
+   "5": 446,
+   "6": 356,
+   "7": 412,
+   "8": 9,
+   "9": 66,
+   "10": 46,
+   "11": 357,
+   "12": 455,
+   "13": 229
+  },
+  "memory_bytes": 56804,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "0": {
+    "count": 506,
+    "mean": 3.613523557312254,
+    "std": 8.60154510533249,
+    "std_pop": 8.59304135129577,
+    "min": 0.00632,
+    "q25": 0.08204499999999999,
+    "median": 0.25651,
+    "q75": 3.6770825,
+    "max": 88.9762,
+    "sum": 1828.4429200000004
+   },
+   "1": {
+    "count": 506,
+    "mean": 11.363636363636363,
+    "std": 23.32245299451514,
+    "std_pop": 23.29939569476613,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 12.5,
+    "max": 100.0,
+    "sum": 5750.0
+   },
+   "2": {
+    "count": 506,
+    "mean": 11.13677865612648,
+    "std": 6.860352940897585,
+    "std_pop": 6.853570583390874,
+    "min": 0.46,
+    "q25": 5.19,
+    "median": 9.69,
+    "q75": 18.1,
+    "max": 27.74,
+    "sum": 5635.209999999999
+   },
+   "3": {
+    "count": 506,
+    "mean": 0.0691699604743083,
+    "std": 0.25399404134041037,
+    "std_pop": 0.2537429349603471,
+    "min": 0.0,
+    "q25": 0.0,
+    "median": 0.0,
+    "q75": 0.0,
+    "max": 1.0,
+    "sum": 35.0
+   },
+   "4": {
+    "count": 506,
+    "mean": 0.5546950592885376,
+    "std": 0.11587767566755595,
+    "std_pop": 0.11576311540656137,
+    "min": 0.385,
+    "q25": 0.449,
+    "median": 0.538,
+    "q75": 0.624,
+    "max": 0.871,
+    "sum": 280.6757
+   },
+   "5": {
+    "count": 506,
+    "mean": 6.284634387351779,
+    "std": 0.7026171434153233,
+    "std_pop": 0.7019225143345689,
+    "min": 3.561,
+    "q25": 5.8854999999999995,
+    "median": 6.2085,
+    "q75": 6.6235,
+    "max": 8.78,
+    "sum": 3180.025
+   },
+   "6": {
+    "count": 506,
+    "mean": 68.57490118577076,
+    "std": 28.148861406903617,
+    "std_pop": 28.121032570236867,
+    "min": 2.9,
+    "q25": 45.025,
+    "median": 77.5,
+    "q75": 94.07499999999999,
+    "max": 100.0,
+    "sum": 34698.9
+   },
+   "7": {
+    "count": 506,
+    "mean": 3.795042687747036,
+    "std": 2.105710126627611,
+    "std_pop": 2.1036283563444593,
+    "min": 1.1296,
+    "q25": 2.100175,
+    "median": 3.2074499999999997,
+    "q75": 5.1884250000000005,
+    "max": 12.1265,
+    "sum": 1920.2916
+   },
+   "8": {
+    "count": 506,
+    "mean": 9.549407114624506,
+    "std": 8.707259384239366,
+    "std_pop": 8.698651117790636,
+    "min": 1.0,
+    "q25": 4.0,
+    "median": 5.0,
+    "q75": 24.0,
+    "max": 24.0,
+    "sum": 4832.0
+   },
+   "9": {
+    "count": 506,
+    "mean": 408.2371541501976,
+    "std": 168.53711605495903,
+    "std_pop": 168.37049503938118,
+    "min": 187.0,
+    "q25": 279.0,
+    "median": 330.0,
+    "q75": 666.0,
+    "max": 711.0,
+    "sum": 206568.0
+   },
+   "10": {
+    "count": 506,
+    "mean": 18.455533596837945,
+    "std": 2.1649455237144406,
+    "std_pop": 2.1628051914821365,
+    "min": 12.6,
+    "q25": 17.4,
+    "median": 19.05,
+    "q75": 20.2,
+    "max": 22.0,
+    "sum": 9338.5
+   },
+   "11": {
+    "count": 506,
+    "mean": 356.6740316205534,
+    "std": 91.29486438415783,
+    "std_pop": 91.20460745217277,
+    "min": 0.32,
+    "q25": 375.3775,
+    "median": 391.44,
+    "q75": 396.225,
+    "max": 396.9,
+    "sum": 180477.06000000003
+   },
+   "12": {
+    "count": 506,
+    "mean": 12.653063241106722,
+    "std": 7.141061511348571,
+    "std_pop": 7.134001636650485,
+    "min": 1.73,
+    "q25": 6.949999999999999,
+    "median": 11.36,
+    "q75": 16.955000000000002,
+    "max": 37.97,
+    "sum": 6402.450000000001
+   },
+   "13": {
+    "count": 506,
+    "mean": 22.532806324110677,
+    "std": 9.197104087379818,
+    "std_pop": 9.188011545278203,
+    "min": 5.0,
+    "q25": 17.025,
+    "median": 21.2,
+    "q75": 25.0,
+    "max": 50.0,
+    "sum": 11401.600000000002
+   }
+  },
+  "categorical": {},
+  "head5": [
+   {
+    "0": 0.00632,
+    "1": 18.0,
+    "2": 2.31,
+    "3": 0,
+    "4": 0.538,
+    "5": 6.575,
+    "6": 65.2,
+    "7": 4.09,
+    "8": 1,
+    "9": 296.0,
+    "10": 15.3,
+    "11": 396.9,
+    "12": 4.98,
+    "13": 24.0
+   },
+   {
+    "0": 0.02731,
+    "1": 0.0,
+    "2": 7.07,
+    "3": 0,
+    "4": 0.469,
+    "5": 6.421,
+    "6": 78.9,
+    "7": 4.9671,
+    "8": 2,
+    "9": 242.0,
+    "10": 17.8,
+    "11": 396.9,
+    "12": 9.14,
+    "13": 21.6
+   },
+   {
+    "0": 0.02729,
+    "1": 0.0,
+    "2": 7.07,
+    "3": 0,
+    "4": 0.469,
+    "5": 7.185,
+    "6": 61.1,
+    "7": 4.9671,
+    "8": 2,
+    "9": 242.0,
+    "10": 17.8,
+    "11": 392.83,
+    "12": 4.03,
+    "13": 34.7
+   },
+   {
+    "0": 0.03237,
+    "1": 0.0,
+    "2": 2.18,
+    "3": 0,
+    "4": 0.458,
+    "5": 6.998,
+    "6": 45.8,
+    "7": 6.0622,
+    "8": 3,
+    "9": 222.0,
+    "10": 18.7,
+    "11": 394.63,
+    "12": 2.94,
+    "13": 33.4
+   },
+   {
+    "0": 0.06905,
+    "1": 0.0,
+    "2": 2.18,
+    "3": 0,
+    "4": 0.458,
+    "5": 7.147,
+    "6": 54.2,
+    "7": 6.0622,
+    "8": 3,
+    "9": 222.0,
+    "10": 18.7,
+    "11": 396.9,
+    "12": 5.33,
+    "13": 36.2
+   }
+  ]
+ },
+ "lab_earthquake.csv": {
+  "path": "C:\\pandas\\수업자료\\lab_earthquake.csv",
+  "bytes": 86400,
+  "shape": [
+   467,
+   22
+  ],
+  "columns": [
+   "time",
+   "latitude",
+   "longitude",
+   "depth",
+   "mag",
+   "magType",
+   "nst",
+   "gap",
+   "dmin",
+   "rms",
+   "net",
+   "id",
+   "updated",
+   "place",
+   "type",
+   "horizontalError",
+   "depthError",
+   "magError",
+   "magNst",
+   "status",
+   "locationSource",
+   "magSource"
+  ],
+  "dtypes": {
+   "time": "str",
+   "latitude": "float64",
+   "longitude": "float64",
+   "depth": "float64",
+   "mag": "float64",
+   "magType": "str",
+   "nst": "float64",
+   "gap": "float64",
+   "dmin": "float64",
+   "rms": "float64",
+   "net": "str",
+   "id": "str",
+   "updated": "str",
+   "place": "str",
+   "type": "str",
+   "horizontalError": "float64",
+   "depthError": "float64",
+   "magError": "float64",
+   "magNst": "float64",
+   "status": "str",
+   "locationSource": "str",
+   "magSource": "str"
+  },
+  "na_counts": {
+   "time": 0,
+   "latitude": 0,
+   "longitude": 0,
+   "depth": 0,
+   "mag": 0,
+   "magType": 0,
+   "nst": 461,
+   "gap": 2,
+   "dmin": 2,
+   "rms": 0,
+   "net": 0,
+   "id": 0,
+   "updated": 0,
+   "place": 0,
+   "type": 0,
+   "horizontalError": 2,
+   "depthError": 0,
+   "magError": 5,
+   "magNst": 4,
+   "status": 0,
+   "locationSource": 0,
+   "magSource": 0
+  },
+  "nunique": {
+   "time": 467,
+   "latitude": 467,
+   "longitude": 467,
+   "depth": 244,
+   "mag": 23,
+   "magType": 5,
+   "nst": 4,
+   "gap": 173,
+   "dmin": 445,
+   "rms": 107,
+   "net": 4,
+   "id": 467,
+   "updated": 467,
+   "place": 437,
+   "type": 1,
+   "horizontalError": 130,
+   "depthError": 92,
+   "magError": 146,
+   "magNst": 156,
+   "status": 1,
+   "locationSource": 4,
+   "magSource": 5
+  },
+  "memory_bytes": 327580,
+  "duplicated_rows": 0,
+  "numeric_stats": {
+   "latitude": {
+    "count": 467,
+    "mean": 7.2555691648822265,
+    "std": 30.26340285393289,
+    "std_pop": 30.23098355929896,
+    "min": -62.0119,
+    "q25": -14.800699999999999,
+    "median": 6.1019,
+    "q75": 35.0694,
+    "max": 85.9681,
+    "sum": 3388.3507999999997
+   },
+   "longitude": {
+    "count": 467,
+    "mean": 23.00359107773019,
+    "std": 122.91394142538549,
+    "std_pop": 122.78227139142002,
+    "min": -179.9981,
+    "q25": -80.89615,
+    "median": 65.6777,
+    "q75": 130.41539999999998,
+    "max": 179.9482,
+    "sum": 10742.677033299999
+   },
+   "depth": {
+    "count": 467,
+    "mean": 71.81770877944325,
+    "std": 131.84625383335418,
+    "std_pop": 131.7050151706025,
+    "min": 1.9,
+    "q25": 10.0,
+    "median": 16.96,
+    "q75": 65.11000000000001,
+    "max": 627.2,
+    "sum": 33538.869999999995
+   },
+   "mag": {
+    "count": 467,
+    "mean": 4.864068522483941,
+    "std": 0.4002291988393729,
+    "std_pop": 0.3998004582783427,
+    "min": 4.5,
+    "q25": 4.6,
+    "median": 4.7,
+    "q75": 5.05,
+    "max": 7.7,
+    "sum": 2271.5200000000004
+   },
+   "nst": {
+    "count": 6,
+    "mean": 20.666666666666668,
+    "std": 12.548572295949315,
+    "std_pop": 11.455226851626389,
+    "min": 12.0,
+    "q25": 16.0,
+    "median": 16.5,
+    "q75": 17.0,
+    "max": 46.0,
+    "sum": 124.0
+   },
+   "gap": {
+    "count": 465,
+    "mean": 98.9483870967742,
+    "std": 49.29351659846289,
+    "std_pop": 49.240484289834804,
+    "min": 18.0,
+    "q25": 61.0,
+    "median": 93.0,
+    "q75": 134.0,
+    "max": 281.0,
+    "sum": 46011.0
+   },
+   "dmin": {
+    "count": 465,
+    "mean": 3.571578924731183,
+    "std": 4.3685984691084,
+    "std_pop": 4.363898523187049,
+    "min": 0.035,
+    "q25": 1.072,
+    "median": 2.192,
+    "q75": 4.232,
+    "max": 31.052,
+    "sum": 1660.7842
+   },
+   "rms": {
+    "count": 467,
+    "mean": 0.8363597430406852,
+    "std": 0.24624219367670308,
+    "std_pop": 0.24597840978344293,
+    "min": 0.09,
+    "q25": 0.67,
+    "median": 0.82,
+    "q75": 1.0,
+    "max": 1.49,
+    "sum": 390.58
+   },
+   "horizontalError": {
+    "count": 465,
+    "mean": 8.089161290322581,
+    "std": 3.2199941010143633,
+    "std_pop": 3.2165298782782044,
+    "min": 0.14,
+    "q25": 5.8,
+    "median": 7.8,
+    "q75": 10.2,
+    "max": 20.2,
+    "sum": 3761.46
+   },
+   "depthError": {
+    "count": 467,
+    "mean": 4.25728051391863,
+    "std": 3.267436437298645,
+    "std_pop": 3.263936236575358,
+    "min": 0.2,
+    "q25": 1.9,
+    "median": 2.5,
+    "q75": 6.35,
+    "max": 31.61,
+    "sum": 1988.15
+   },
+   "magError": {
+    "count": 462,
+    "mean": 0.08729870129870132,
+    "std": 0.04793811039048995,
+    "std_pop": 0.047886201214041225,
+    "min": 0.0,
+    "q25": 0.059,
+    "median": 0.0785,
+    "q75": 0.105,
+    "max": 0.51,
+    "sum": 40.33200000000001
+   },
+   "magNst": {
+    "count": 463,
+    "mean": 69.74946004319655,
+    "std": 91.40553443801032,
+    "std_pop": 91.3067710008079,
+    "min": 0.0,
+    "q25": 20.0,
+    "median": 37.0,
+    "q75": 75.0,
+    "max": 597.0,
+    "sum": 32294.0
+   }
+  },
+  "categorical": {
+   "time": {
+    "nunique": 467,
+    "top_20": [
+     [
+      "2020-02-20T04:01:45.400Z",
+      1
+     ],
+     [
+      "2020-02-20T03:53:06.660Z",
+      1
+     ],
+     [
+      "2020-02-20T00:48:11.015Z",
+      1
+     ],
+     [
+      "2020-02-19T21:38:06.692Z",
+      1
+     ],
+     [
+      "2020-02-19T17:37:35.746Z",
+      1
+     ],
+     [
+      "2020-02-19T15:54:56.853Z",
+      1
+     ],
+     [
+      "2020-02-19T15:50:32.230Z",
+      1
+     ],
+     [
+      "2020-02-19T11:01:33.152Z",
+      1
+     ],
+     [
+      "2020-02-19T09:47:20.254Z",
+      1
+     ],
+     [
+      "2020-02-19T09:42:01.844Z",
+      1
+     ],
+     [
+      "2020-02-19T09:38:24.441Z",
+      1
+     ],
+     [
+      "2020-02-19T05:27:44.514Z",
+      1
+     ],
+     [
+      "2020-02-19T05:10:41.760Z",
+      1
+     ],
+     [
+      "2020-02-18T23:07:04.921Z",
+      1
+     ],
+     [
+      "2020-02-18T22:17:25.723Z",
+      1
+     ],
+     [
+      "2020-02-18T21:41:39.607Z",
+      1
+     ],
+     [
+      "2020-02-18T16:09:23.810Z",
+      1
+     ],
+     [
+      "2020-02-18T11:50:13.436Z",
+      1
+     ],
+     [
+      "2020-02-18T11:28:05.746Z",
+      1
+     ],
+     [
+      "2020-02-18T08:21:36.304Z",
+      1
+     ]
+    ]
+   },
+   "magType": {
+    "nunique": 5,
+    "top_20": [
+     [
+      "mb",
+      367
+     ],
+     [
+      "mww",
+      81
+     ],
+     [
+      "mwr",
+      9
+     ],
+     [
+      "ml",
+      9
+     ],
+     [
+      "mw",
+      1
+     ]
+    ]
+   },
+   "net": {
+    "nunique": 4,
+    "top_20": [
+     [
+      "us",
+      459
+     ],
+     [
+      "pr",
+      5
+     ],
+     [
+      "ak",
+      2
+     ],
+     [
+      "ci",
+      1
+     ]
+    ]
+   },
+   "id": {
+    "nunique": 467,
+    "top_20": [
+     [
+      "us70007tdi",
+      1
+     ],
+     [
+      "us70007tdf",
+      1
+     ],
+     [
+      "us70007tc3",
+      1
+     ],
+     [
+      "us70007t8b",
+      1
+     ],
+     [
+      "us70007t3n",
+      1
+     ],
+     [
+      "us70007t2i",
+      1
+     ],
+     [
+      "us70007t2h",
+      1
+     ],
+     [
+      "us70007szg",
+      1
+     ],
+     [
+      "us70007syx",
+      1
+     ],
+     [
+      "us70007sz4",
+      1
+     ],
+     [
+      "us70007syw",
+      1
+     ],
+     [
+      "us70007swc",
+      1
+     ],
+     [
+      "us70007swm",
+      1
+     ],
+     [
+      "us70007sqx",
+      1
+     ],
+     [
+      "us70007spx",
+      1
+     ],
+     [
+      "us70007snb",
+      1
+     ],
+     [
+      "us70007sgb",
+      1
+     ],
+     [
+      "us70007sbx",
+      1
+     ],
+     [
+      "us70007sbn",
+      1
+     ],
+     [
+      "us70007sa4",
+      1
+     ]
+    ]
+   },
+   "updated": {
+    "nunique": 467,
+    "top_20": [
+     [
+      "2020-02-20T04:17:34.040Z",
+      1
+     ],
+     [
+      "2020-02-20T06:19:21.554Z",
+      1
+     ],
+     [
+      "2020-02-20T04:45:56.040Z",
+      1
+     ],
+     [
+      "2020-02-20T02:15:41.773Z",
+      1
+     ],
+     [
+      "2020-02-19T17:55:41.040Z",
+      1
+     ],
+     [
+      "2020-02-20T04:05:03.557Z",
+      1
+     ],
+     [
+      "2020-02-19T22:35:30.040Z",
+      1
+     ],
+     [
+      "2020-02-19T11:27:57.040Z",
+      1
+     ],
+     [
+      "2020-02-19T10:10:03.040Z",
+      1
+     ],
+     [
+      "2020-02-19T10:42:04.040Z",
+      1
+     ],
+     [
+      "2020-02-19T09:58:34.040Z",
+      1
+     ],
+     [
+      "2020-02-19T05:47:01.040Z",
+      1
+     ],
+     [
+      "2020-02-19T06:05:01.040Z",
+      1
+     ],
+     [
+      "2020-02-19T02:49:31.040Z",
+      1
+     ],
+     [
+      "2020-02-19T00:24:24.040Z",
+      1
+     ],
+     [
+      "2020-02-18T22:42:35.801Z",
+      1
+     ],
+     [
+      "2020-02-19T07:22:32.323Z",
+      1
+     ],
+     [
+      "2020-02-18T14:07:55.040Z",
+      1
+     ],
+     [
+      "2020-02-18T11:45:42.040Z",
+      1
+     ],
+     [
+      "2020-02-18T08:42:03.040Z",
+      1
+     ]
+    ]
+   },
+   "place": {
+    "nunique": 437,
+    "top_20": [
+     [
+      "South of the Fiji Islands",
+      8
+     ],
+     [
+      "Central East Pacific Rise",
+      6
+     ],
+     [
+      "East of the North Island of New Zealand",
+      6
+     ],
+     [
+      "Southwest Indian Ridge",
+      4
+     ],
+     [
+      "17km S of Hualian, Taiwan",
+      2
+     ],
+     [
+      "North of Svalbard",
+      2
+     ],
+     [
+      "North Indian Ocean",
+      2
+     ],
+     [
+      "63km WSW of Amatignak Island, Alaska",
+      2
+     ],
+     [
+      "71km ESE of Karpathos, Greece",
+      2
+     ],
+     [
+      "57km W of Amatignak Island, Alaska",
+      2
+     ],
+     [
+      "102km WNW of Kirakira, Solomon Islands",
+      2
+     ],
+     [
+      "54km W of Amatignak Island, Alaska",
+      2
+     ],
+     [
+      "53km WSW of Amatignak Island, Alaska",
+      2
+     ],
+     [
+      "56km W of Amatignak Island, Alaska",
+      2
+     ],
+     [
+      "118km SE of Visokoi Island, South Georgia and the South Sandwich Islands",
+      1
+     ],
+     [
+      "9km NNE of Ohara, Japan",
+      1
+     ],
+     [
+      "150km E of Chichi-shima, Japan",
+      1
+     ],
+     [
+      "291km WNW of Bandon, Oregon",
+      1
+     ],
+     [
+      "85km NW of Kandrian, Papua New Guinea",
+      1
+     ],
+     [
+      "92km SSW of Merizo Village, Guam",
+      1
+     ]
+    ]
+   },
+   "type": {
+    "nunique": 1,
+    "top_20": [
+     [
+      "earthquake",
+      467
+     ]
+    ]
+   },
+   "status": {
+    "nunique": 1,
+    "top_20": [
+     [
+      "reviewed",
+      467
+     ]
+    ]
+   },
+   "locationSource": {
+    "nunique": 4,
+    "top_20": [
+     [
+      "us",
+      459
+     ],
+     [
+      "pr",
+      5
+     ],
+     [
+      "ak",
+      2
+     ],
+     [
+      "ci",
+      1
+     ]
+    ]
+   },
+   "magSource": {
+    "nunique": 5,
+    "top_20": [
+     [
+      "us",
+      457
+     ],
+     [
+      "pr",
+      5
+     ],
+     [
+      "guc",
+      2
+     ],
+     [
+      "ak",
+      2
+     ],
+     [
+      "ci",
+      1
+     ]
+    ]
+   }
+  },
+  "head5": [
+   {
+    "time": "2020-02-20T04:01:45.400Z",
+    "latitude": -57.566,
+    "longitude": -26.053,
+    "depth": 98.38,
+    "mag": 5.1,
+    "magType": "mb",
+    "nst": NaN,
+    "gap": 76.0,
+    "dmin": 6.722,
+    "rms": 0.71,
+    "net": "us",
+    "id": "us70007tdi",
+    "updated": "2020-02-20T04:17:34.040Z",
+    "place": "118km SE of Visokoi Island, South Georgia and the South Sandwich Islands",
+    "type": "earthquake",
+    "horizontalError": 10.7,
+    "depthError": 7.1,
+    "magError": 0.086,
+    "magNst": 44.0,
+    "status": "reviewed",
+    "locationSource": "us",
+    "magSource": "us"
+   },
+   {
+    "time": "2020-02-20T03:53:06.660Z",
+    "latitude": 35.3266,
+    "longitude": 140.4295,
+    "depth": 10.0,
+    "mag": 4.6,
+    "magType": "mb",
+    "nst": NaN,
+    "gap": 116.0,
+    "dmin": 1.954,
+    "rms": 1.01,
+    "net": "us",
+    "id": "us70007tdf",
+    "updated": "2020-02-20T06:19:21.554Z",
+    "place": "9km NNE of Ohara, Japan",
+    "type": "earthquake",
+    "horizontalError": 7.7,
+    "depthError": 1.9,
+    "magError": 0.085,
+    "magNst": 41.0,
+    "status": "reviewed",
+    "locationSource": "us",
+    "magSource": "us"
+   },
+   {
+    "time": "2020-02-20T00:48:11.015Z",
+    "latitude": 26.9494,
+    "longitude": 143.722,
+    "depth": 10.0,
+    "mag": 4.6,
+    "magType": "mb",
+    "nst": NaN,
+    "gap": 139.0,
+    "dmin": 1.379,
+    "rms": 0.5,
+    "net": "us",
+    "id": "us70007tc3",
+    "updated": "2020-02-20T04:45:56.040Z",
+    "place": "150km E of Chichi-shima, Japan",
+    "type": "earthquake",
+    "horizontalError": 8.3,
+    "depthError": 1.9,
+    "magError": 0.07,
+    "magNst": 61.0,
+    "status": "reviewed",
+    "locationSource": "us",
+    "magSource": "us"
+   },
+   {
+    "time": "2020-02-19T21:38:06.692Z",
+    "latitude": 43.715,
+    "longitude": -127.9085,
+    "depth": 10.0,
+    "mag": 4.5,
+    "magType": "mb",
+    "nst": NaN,
+    "gap": 192.0,
+    "dmin": 1.97,
+    "rms": 0.97,
+    "net": "us",
+    "id": "us70007t8b",
+    "updated": "2020-02-20T02:15:41.773Z",
+    "place": "291km WNW of Bandon, Oregon",
+    "type": "earthquake",
+    "horizontalError": 8.1,
+    "depthError": 1.9,
+    "magError": 0.057,
+    "magNst": 91.0,
+    "status": "reviewed",
+    "locationSource": "us",
+    "magSource": "us"
+   },
+   {
+    "time": "2020-02-19T17:37:35.746Z",
+    "latitude": -5.6073,
+    "longitude": 149.079,
+    "depth": 173.53,
+    "mag": 4.8,
+    "magType": "mb",
+    "nst": NaN,
+    "gap": 73.0,
+    "dmin": 3.38,
+    "rms": 1.12,
+    "net": "us",
+    "id": "us70007t3n",
+    "updated": "2020-02-19T17:55:41.040Z",
+    "place": "85km NW of Kandrian, Papua New Guinea",
+    "type": "earthquake",
+    "horizontalError": 6.9,
+    "depthError": 8.6,
+    "magError": 0.1,
+    "magNst": 31.0,
+    "status": "reviewed",
+    "locationSource": "us",
+    "magSource": "us"
+   }
+  ]
+ }
+}

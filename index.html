@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pandas Lab</title>
+  <link rel="stylesheet" href="webapp/src/theme.css">
+  <link rel="stylesheet" href="webapp/src/app.css">
+</head>
+<body>
+  <div id="lab-root"></div>
+  <!-- 로드 순서: df -> ui -> data -> app -> modules -> boot.
+       app.js 가 modules 보다 나중에 오면 장이 하나도 등록되지 않는다. -->
+  <script src="webapp/src/core/df.js"></script>
+  <script src="webapp/src/core/ui.js"></script>
+  <script src="webapp/src/core/data.js"></script>
+  <script src="webapp/src/core/app.js"></script>
+  <script src="webapp/src/modules/ch01-why.js"></script>
+  <script src="webapp/src/modules/ch02-load.js"></script>
+  <script src="webapp/src/modules/ch03-series.js"></script>
+  <script src="webapp/src/modules/ch04-frame.js"></script>
+  <script src="webapp/src/modules/ch05-locindex.js"></script>
+  <script src="webapp/src/modules/ch06-align.js"></script>
+  <script src="webapp/src/modules/ch07-copy.js"></script>
+  <script src="webapp/src/modules/ch08-missing.js"></script>
+  <script src="webapp/src/modules/ch09-dtype.js"></script>
+  <script src="webapp/src/modules/ch10-agg.js"></script>
+  <script src="webapp/src/modules/ch11-groupby.js"></script>
+  <script src="webapp/src/modules/ch12-merge.js"></script>
+  <script src="webapp/src/modules/ch13-notebook.js"></script>
+  <script src="webapp/src/modules/ch14-project.js"></script>
+  <script>Lab.boot({ title: "Pandas Lab", bookHref: "pandas.md" });</script>
+</body>
+</html>

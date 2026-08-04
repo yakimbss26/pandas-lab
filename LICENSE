@@ -1,0 +1,81 @@
+이 저장소는 **코드**와 **데이터**에 서로 다른 조건이 적용된다. 아래를 나누어 읽어라.
+
+================================================================================
+1. 코드와 교재 (MIT License)
+================================================================================
+
+`webapp/` 의 모든 소스, `pandas.md` 교재 본문, 빌드 스크립트가 여기 해당한다.
+
+MIT License
+
+Copyright (c) 2026 Pandas Lab contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+2. 웹앱에 담긴 실습 데이터 (별도 조건)
+================================================================================
+
+`webapp/src/core/data.js` 와 단일 파일 배포본 `pandas-lab.html` 에 들어 있는 데이터다.
+위 MIT License 는 이 데이터에 적용되지 않는다.
+
+2-1. 합성 데이터 — 타이타닉 · 라면 평점 · 전복
+--------------------------------------------------------------------------------
+이 세 데이터는 **원본이 아니다.** 원본의 구조(컬럼 이름, 자료형, 결측 위치와 개수)만
+남기고 값은 프로그램으로 새로 만든 것이다. 생성 코드는 `webapp/build.js` 에 있다.
+
+  · 원본을 재배포하지 않기 위한 조치다. 원본은 다음 출처의 자료이며 이 저장소에 없다.
+      - 타이타닉: Kaggle "Titanic - Machine Learning from Disaster" 대회 데이터
+      - 라면 평점: Kaggle 재업로드본 (원출처 The Ramen Rater)
+      - 전복:      UCI Machine Learning Repository "Abalone" 의 재가공본
+  · 합성 데이터 자체는 MIT License 로 자유롭게 쓸 수 있다.
+  · 값이 실제와 다르므로 **연구나 실무 분석에 쓰면 안 된다.** 교육용 실습 전용이다.
+  · 웹앱 화면 상단에 합성 데이터임을 표시한다.
+
+2-2. 지진 관측 기록 — 실데이터 (퍼블릭 도메인)
+--------------------------------------------------------------------------------
+`lab_earthquake` 데이터는 미국 지질조사국(USGS) 의 실제 관측 기록이다.
+
+  · 출처: https://earthquake.usgs.gov/earthquakes/map/
+  · 미국 연방정부 저작물이므로 퍼블릭 도메인이며 자유롭게 재배포할 수 있다.
+  · 값을 가공하지 않고 그대로 실었다(일부 컬럼만 골라냈다).
+
+================================================================================
+3. 교재가 인용한 수치
+================================================================================
+
+교재는 위 원본 데이터의 행 수·평균·결측 개수 같은 **집계값**과, 설명을 위한 소수의
+행(`head()` 수준)을 인용한다. 집계값은 사실이므로 저작 대상이 아니며, 소량 인용은
+설명 목적의 인용이다. 데이터셋 자체는 이 저장소에 포함되지 않는다.
+
+인용량은 `webapp/test/check_licensing.js` 가 자동으로 검사한다.
+
+================================================================================
+4. 원본 수업자료
+================================================================================
+
+이 프로젝트는 기존 수업자료(주피터 노트북과 PDF)를 참고해 만들었으나,
+그 자료들은 **저장소에 포함되지 않는다**(`.gitignore` 로 제외). 이유:
+
+  · 일부가 출판 교재에서 온 자료다
+  · 재배포가 제한된 데이터셋을 담고 있다
+  · 한 노트북의 저장된 출력에 API 자격증명이 남아 있었다
+
+교재는 그 자료들의 내용을 새로 쓴 것이며, 원본에서 발견한 오류와 구버전 API 는
+`부록` 에 정리해 두었다.

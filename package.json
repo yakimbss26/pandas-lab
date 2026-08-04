@@ -1,0 +1,24 @@
+{
+  "name": "pandas-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "pandas 교재와 실습 웹앱 — 과학고 1학년용",
+  "scripts": {
+    "book": "node webapp/build_book.js",
+    "build": "node webapp/build.js",
+    "build:data": "node webapp/build.js --data",
+    "build:html": "node webapp/build.js --html",
+    "test": "node webapp/test/df.test.js && node webapp/test/cross.test.js && node webapp/test/check_licensing.js && node webapp/test/final_sweep.js",
+    "test:engine": "node webapp/test/df.test.js",
+    "test:cross": "node webapp/test/cross.test.js",
+    "test:licensing": "node webapp/test/check_licensing.js && node webapp/test/final_sweep.js",
+    "test:sweep": "node webapp/test/final_sweep.js",
+    "gen:expected": "echo 기대값은 실제 pandas 로 만든다: python -X utf8 webapp/test/gen_expected.py",
+    "check": "node --check webapp/src/core/df.js && node --check webapp/src/core/ui.js && node --check webapp/src/core/app.js",
+    "start": "node webapp/serve.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

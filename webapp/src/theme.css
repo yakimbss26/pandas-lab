@@ -1,0 +1,397 @@
+/* theme.css — 디자인 시스템
+ *
+ * 색은 dataviz 스킬의 validate_palette.js 를 실제로 돌려서 확정했다. 임의로 바꾸지 마라.
+ * 바꿔야 하면 검증기를 다시 돌리고 ../../CLAUDE.md §7-1 을 함께 고친다.
+ *
+ *   원본 = 파랑 · 사본 = 주황 · 결과 = 초록
+ *   강조 = 색이 아니다 (링 + 굵은 라벨). 노랑을 쓰면 주황과 구분되지 않아 FAIL 이 난다.
+ *   에러/경고 = 상태색 빨강 + 아이콘·라벨. 계열색으로 재사용 금지.
+ *   결측(NaN) = 회색 + 45° 해칭
+ *
+ * 다크 값은 두 곳에 선언한다. 미디어 쿼리는 OS 설정, data-theme 은 사용자 토글이며
+ * 토글이 양방향으로 이겨야 한다(:not() 가드가 라이트 도장을 OS-다크보다 우선시킨다).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── 표면·잉크 (검증기의 surface 인자와 같은 값이어야 한다) */
+  --surface-1: #fcfcfb;          /* 차트 표면 */
+  --surface-page: #f9f9f7;       /* 페이지 평면 */
+  --surface-raised: #ffffff;     /* 카드 */
+  --surface-sunken: #f2f1ed;     /* 코드·입력 */
+  --ink-1: #0b0b0b;              /* 본문 */
+  --ink-2: #52514e;              /* 보조 */
+  --ink-muted: #898781;          /* 축·라벨 */
+  --grid: #e1e0d9;              /* 격자선 (헤어라인) */
+  --axis: #c3c2b7;              /* 기준선·축 */
+  --border: rgba(11, 11, 11, 0.10);
+
+  /* ── 역할색 (전 장 고정) */
+  --c-original: #2a78d6;
+  --c-copy: #eb6834;
+  --c-result: #1baf7a;
+  --c-danger: #d03b3b;           /* 상태색. 아이콘+라벨과 함께만 */
+  --c-warning: #fab219;
+  --c-good: #0ca30c;
+  --c-na: #898781;
+
+  /* 강조는 색이 아니라 링이다 */
+  --c-focus-ring: var(--ink-1);
+  --focus-ring-width: 2px;
+
+  /* 라이트 모드에서 결과색은 표면 대비 2.74:1 이다 (3:1 미만).
+   * relief 규칙: 이 색을 칸 채우기로 쓰면 숫자 라벨이나 표 보기를 반드시 함께 낸다. */
+  --relief-required: 1;
+
+  /* ── 순차 램프 (크기·magnitude 전용. 단일 색조. 무지개 금지) */
+  --seq-100: #cde2fb;
+  --seq-200: #9ec5f4;
+  --seq-300: #6da7ec;
+  --seq-400: #3987e5;
+  --seq-500: #256abf;
+  --seq-600: #184f95;
+  --seq-700: #0d366b;
+  /* 순서형(ordinal) 램프는 라이트에서 250 보다 밝게 시작하지 않는다 */
+  --seq-ordinal-min: #86b6ef;
+
+  /* ── 타이포 (모두 시스템 산세리프. 디스플레이·세리프 없음) */
+  --font-sans: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-hero: 2.5rem;
+  --lh-tight: 1.25;
+  --lh-base: 1.7;
+
+  /* ── 간격·형태 */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --radius-sm: 4px;              /* 데이터 끝단 라운딩과 같은 값 */
+  --radius: 8px;
+  --radius-lg: 12px;
+  --mark-gap: 2px;               /* 채움 사이 표면 간격 */
+  --stroke-line: 2px;            /* 선 굵기 */
+  --marker-min: 8px;             /* 마커 최소 크기 */
+
+  --shadow-1: 0 1px 2px rgba(11, 11, 11, 0.06);
+  --shadow-2: 0 4px 12px rgba(11, 11, 11, 0.08);
+  --dur: 180ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-page: #0d0d0d;
+    --surface-raised: #212120;
+    --surface-sunken: #141413;
+    --ink-1: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+
+    --c-original: #3987e5;
+    --c-copy: #d95926;
+    --c-result: #199e70;
+    --c-danger: #d03b3b;
+    --c-warning: #fab219;
+    --c-good: #0ca30c;
+    --c-na: #898781;
+    --c-focus-ring: var(--ink-1);
+
+    /* 다크에서는 3색 모두 3:1 이상이라 relief 가 필요 없다 */
+    --relief-required: 0;
+
+    --seq-ordinal-min: #184f95;   /* 다크에서는 600 보다 어둡게 가지 않는다 */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --surface-page: #0d0d0d;
+  --surface-raised: #212120;
+  --surface-sunken: #141413;
+  --ink-1: #ffffff;
+  --ink-2: #c3c2b7;
+  --ink-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.10);
+
+  --c-original: #3987e5;
+  --c-copy: #d95926;
+  --c-result: #199e70;
+  --c-danger: #d03b3b;
+  --c-warning: #fab219;
+  --c-good: #0ca30c;
+  --c-na: #898781;
+  --c-focus-ring: var(--ink-1);
+  --relief-required: 0;
+  --seq-ordinal-min: #184f95;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* ─────────────────────────────────────────────── 기본 */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  color: var(--ink-1);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { line-height: var(--lh-tight); margin: 0 0 var(--sp-3); font-weight: 650; }
+h1 { font-size: var(--fs-xl); }
+h2 { font-size: var(--fs-lg); }
+h3 { font-size: var(--fs-base); }
+p { margin: 0 0 var(--sp-4); }
+a { color: var(--c-original); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+code, pre, .mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
+code {
+  background: var(--surface-sunken);
+  padding: 1px var(--sp-1);
+  border-radius: var(--radius-sm);
+}
+pre {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  margin: 0 0 var(--sp-4);
+  overflow-x: auto;               /* 넓은 코드는 자기 안에서 스크롤한다 */
+  line-height: 1.55;
+}
+pre code { background: none; padding: 0; }
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--c-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────── 조각 */
+
+.card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  margin: 0 0 var(--sp-5);
+}
+
+.panel-title {
+  font-size: var(--fs-sm);
+  font-weight: 650;
+  color: var(--ink-2);
+  margin: 0 0 var(--sp-3);
+}
+
+/* 코드 블록 + 복사 버튼 — 학생이 IDLE 이나 주피터에 붙여 실행한다 */
+.codeblock { margin: 0 0 var(--sp-4); }
+.codeblock pre { margin-bottom: var(--sp-2); }
+.code-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin: 0 0 var(--sp-4);
+}
+.btn-copy {
+  font-size: var(--fs-xs);
+  padding: var(--sp-1) var(--sp-3);
+}
+.btn-copy.is-on {
+  border-color: var(--c-result);
+  box-shadow: inset 0 0 0 1px var(--c-result);
+  font-weight: 650;
+}
+.code-hint { font-size: var(--fs-xs); color: var(--ink-muted); }
+
+.note {
+  border-left: 3px solid var(--axis);
+  padding: var(--sp-2) 0 var(--sp-2) var(--sp-4);
+  color: var(--ink-2);
+  margin: 0 0 var(--sp-4);
+}
+/* 경고는 색만으로 말하지 않는다 — 아이콘과 라벨이 함께 온다 */
+.note--danger { border-left-color: var(--c-danger); }
+.note--danger .note-label { color: var(--c-danger); font-weight: 650; }
+
+/* 강조는 색이 아니라 링이다 */
+.is-focus {
+  outline: var(--focus-ring-width) solid var(--c-focus-ring);
+  outline-offset: 1px;
+  font-weight: 700;
+}
+
+/* 역할 칩 — 색 옆에 항상 글자가 온다 (색 단독 금지) */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+}
+.chip::before {
+  content: '';
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  background: var(--chip-color, var(--ink-muted));
+  box-shadow: 0 0 0 var(--mark-gap) var(--surface-1);
+}
+.chip--original { --chip-color: var(--c-original); }
+.chip--copy { --chip-color: var(--c-copy); }
+.chip--result { --chip-color: var(--c-result); }
+.chip--na { --chip-color: var(--c-na); }
+
+/* ─────────────────────────────────────────────── 표 */
+
+.tbl-wrap { overflow-x: auto; }     /* 넓은 표는 자기 안에서 스크롤 */
+table.tbl {
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;  /* 세로로 정렬돼야 하는 곳에만 */
+  width: 100%;
+}
+table.tbl th, table.tbl td {
+  padding: var(--sp-2) var(--sp-3);
+  text-align: right;
+  border-bottom: 1px solid var(--grid);
+  white-space: nowrap;
+}
+table.tbl th {
+  color: var(--ink-2);
+  font-weight: 650;
+  border-bottom-color: var(--axis);
+}
+table.tbl th:first-child, table.tbl td:first-child {
+  text-align: left;
+  color: var(--ink-muted);           /* 인덱스 열은 뒤로 물린다 */
+}
+table.tbl td.na { color: var(--c-na); font-style: italic; }
+table.tbl tr.hl td { background: color-mix(in oklab, var(--c-original) 10%, transparent); }
+
+/* 뷰/사본 상태를 표 테두리로 표시한다 (색 단독으로 말하지 않게 라벨과 함께 쓴다) */
+.frame--original { box-shadow: inset 0 0 0 2px var(--c-original); border-radius: var(--radius); }
+.frame--copy { box-shadow: inset 0 0 0 2px var(--c-copy); border-radius: var(--radius); }
+.frame--result { box-shadow: inset 0 0 0 2px var(--c-result); border-radius: var(--radius); }
+
+/* ─────────────────────────────────────────────── 입력 */
+
+button, .btn {
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--ink-1);
+  background: var(--surface-raised);
+  border: 1px solid var(--axis);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  transition: background var(--dur), border-color var(--dur);
+}
+button:hover, .btn:hover { background: var(--surface-sunken); }
+button[aria-pressed="true"], .btn.is-on {
+  border-color: var(--c-original);
+  box-shadow: inset 0 0 0 1px var(--c-original);
+  font-weight: 650;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+input[type="range"] { width: 100%; accent-color: var(--c-original); }
+input[type="text"], input[type="number"], select {
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--ink-1);
+  background: var(--surface-sunken);
+  border: 1px solid var(--axis);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2);
+}
+
+.control-row {          /* 필터는 차트 위에 한 줄로 */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+}
+.control-label { font-size: var(--fs-xs); color: var(--ink-2); }
+
+/* ─────────────────────────────────────────────── 차트 */
+
+.viz { display: block; max-width: 100%; overflow: visible; }
+.viz-wrap { overflow-x: auto; }     /* 넓은 차트도 자기 안에서 스크롤 */
+.viz text { font-family: var(--font-sans); fill: var(--ink-2); }
+.viz .axis-label, .viz .tick-label {
+  font-size: 11px;
+  fill: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.viz .grid-line { stroke: var(--grid); stroke-width: 1; }
+.viz .axis-line { stroke: var(--axis); stroke-width: 1; }
+/* 값 라벨은 계열색을 입지 않는다 — 잉크 토큰만 */
+.viz .value-label { font-size: 11px; fill: var(--ink-1); font-weight: 600; }
+/* 겹치는 마크에는 표면색 링 2px */
+.viz .mark { stroke: var(--surface-1); stroke-width: var(--mark-gap); }
+.viz .line { fill: none; stroke-width: var(--stroke-line); stroke-linejoin: round; stroke-linecap: round; }
+.viz .crosshair { stroke: var(--ink-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  z-index: 40;
+  max-width: 280px;
+}
+
+/* 결측 해칭 — 색 외의 채널. SVG 는 <pattern id="na-hatch"> 를 함께 쓴다 */
+.na-hatch {
+  background-image: repeating-linear-gradient(45deg,
+    var(--c-na) 0 1px, transparent 1px 5px);
+  background-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+}
+
+/* 강제 색상 모드에서는 색이 사라지므로 텍스처·테두리가 의미를 진다 */
+@media (forced-colors: active) {
+  .chip::before { forced-color-adjust: none; border: 1px solid CanvasText; }
+  .viz .mark { stroke: Canvas; }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pandas-lab",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["webapp/serve.js"],
+      "port": 5173
+    }
+  ]
+}
