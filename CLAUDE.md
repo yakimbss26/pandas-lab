@@ -1,5 +1,10 @@
 # Pandas Lab — 프로젝트 지침
 
+> **배포 완료 (2026-08-04)**
+> 저장소 https://github.com/yakimbss26/pandas-lab
+> 학생용 사이트 https://yakimbss26.github.io/pandas-lab/
+> 학생에게는 **사이트 URL 하나만** 준다.
+
 `C:\pandas` 에서 **pandas 교재 + 실습 웹앱**을 만든다.
 `C:\numpy` 의 NumPy Lab 에서 실제로 통한 방식을 그대로 따른다. 이 문서가 그 방식과
 이 프로젝트에서 확인한 사실을 담은 단일 기준이다. **새 폴더를 만들 때마다 그 폴더에 `CLAUDE.md` 를 쓴다.**
@@ -312,7 +317,9 @@ NumPy Lab 의 힘은 `nd.js` 가 NumPy 와 똑같이 `(buffer, shape, strides, o
 | matplotlib | 3.11.1 (설치함). **seaborn 은 없음** — 원본의 `sns.distplot`/`sns.boxplot` 은 재현 불가 |
 | node / npm | v24.18.0 / 11.16.0 |
 | git / gh | 설치됨 (`C:\Program Files\Git`, `C:\Program Files\GitHub CLI`) |
-| git 저장소 | **아직 `git init` 안 됨** |
+| git 저장소 | `main` 브랜치, `origin` = github.com/yakimbss26/pandas-lab (public) |
+| scikit-learn / scipy | 1.9.0 / 1.18.0 (14장 검증용으로 설치함) |
+| pypdf | 설치함 (PDF 텍스트 추출) |
 
 | 함정 | 대처 |
 |:---|:---|
