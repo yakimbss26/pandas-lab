@@ -5,7 +5,8 @@
       "name": "pandas-lab",
       "runtimeExecutable": "node",
       "runtimeArgs": ["webapp/serve.js"],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

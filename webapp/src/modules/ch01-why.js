@@ -134,6 +134,7 @@
     num: 1,
     title: 'pandas 는 무엇을 해결하는가',
     subtitle: '리스트 → 배열 → DataFrame, 표 데이터가 막히는 지점을 하나씩 넘는다',
+    sim: '리스트 · 배열 · DataFrame 비교기 · Series 해부기',
 
     render: function (root) {
       root.appendChild(UI.note(

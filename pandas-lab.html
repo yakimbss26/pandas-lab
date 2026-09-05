@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pandas Lab (단일 파일)</title>
+  <meta name="color-scheme" content="light dark">
+  <title>Pandas Lab — 과학고 pandas 심화 학습 (단일 파일)</title>
+  <meta name="description" content="브라우저에서 도는 미니 DataFrame 엔진과 시뮬레이터로 배우는 pandas 심화 학습 실습장.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='15' font-weight='bold' fill='white' text-anchor='middle'%3Epd%3C/text%3E%3C/svg%3E">
   <style>
 /* ===== theme.css ===== */
 /* theme.css — 디자인 시스템
@@ -23,17 +26,21 @@
 :root {
   color-scheme: light;
 
-  /* ── 표면·잉크 (검증기의 surface 인자와 같은 값이어야 한다) */
+  /* ── 표면·잉크 (검증기의 surface 인자와 같은 값이어야 한다)
+   * 값은 NumPy Lab(https://yakimbss26.github.io/numpy-lab/)과 같다. 두 사이트는
+   * 한 벌의 디자인이어야 하므로 표면·잉크·형태 값을 한쪽에서만 바꾸지 않는다. */
   --surface-1: #fcfcfb;          /* 차트 표면 */
   --surface-page: #f9f9f7;       /* 페이지 평면 */
-  --surface-raised: #ffffff;     /* 카드 */
-  --surface-sunken: #f2f1ed;     /* 코드·입력 */
+  --surface-raised: #fcfcfb;     /* 카드·사이드바 */
+  --surface-sunken: #f2f2ee;     /* 코드·입력·콜아웃 */
+  --surface-3: #e9e9e3;          /* 한 단 더 눌린 면 (세그먼트 트랙) */
   --ink-1: #0b0b0b;              /* 본문 */
   --ink-2: #52514e;              /* 보조 */
   --ink-muted: #898781;          /* 축·라벨 */
   --grid: #e1e0d9;              /* 격자선 (헤어라인) */
   --axis: #c3c2b7;              /* 기준선·축 */
   --border: rgba(11, 11, 11, 0.10);
+  --border-2: rgba(11, 11, 11, 0.18);   /* 입력·버튼 테두리 */
 
   /* ── 역할색 (전 장 고정) */
   --c-original: #2a78d6;
@@ -43,6 +50,14 @@
   --c-warning: #fab219;
   --c-good: #0ca30c;
   --c-na: #898781;
+  --success-text: #006300;       /* 초록 글자는 본문 대비를 위해 한 단 어둡게 */
+
+  /* 역할색의 옅은 배경 (칸 채우기·뱃지). 색 단독으로 말하지 않게 라벨과 함께 쓴다 */
+  --c-original-wash: rgba(42, 120, 214, 0.14);
+  --c-copy-wash: rgba(235, 104, 52, 0.14);
+  --c-result-wash: rgba(27, 175, 122, 0.16);
+  --c-danger-wash: rgba(208, 59, 59, 0.14);
+  --c-good-wash: rgba(12, 163, 12, 0.12);
 
   /* 강조는 색이 아니라 링이다 */
   --c-focus-ring: var(--ink-1);
@@ -67,13 +82,13 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
   --fs-xs: 0.75rem;
-  --fs-sm: 0.8125rem;
-  --fs-base: 0.9375rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 15.5px;             /* NumPy Lab 본문과 같은 크기 */
   --fs-lg: 1.125rem;
   --fs-xl: 1.5rem;
   --fs-hero: 2.5rem;
-  --lh-tight: 1.25;
-  --lh-base: 1.7;
+  --lh-tight: 1.35;
+  --lh-base: 1.72;
 
   /* ── 간격·형태 */
   --sp-1: 4px;
@@ -83,16 +98,39 @@
   --sp-5: 24px;
   --sp-6: 32px;
   --sp-7: 48px;
-  --radius-sm: 4px;              /* 데이터 끝단 라운딩과 같은 값 */
-  --radius: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;             /* 카드 */
+  --radius-mark: 4px;            /* 데이터 끝단 라운딩. UI 형태와 따로 간다 */
   --mark-gap: 2px;               /* 채움 사이 표면 간격 */
   --stroke-line: 2px;            /* 선 굵기 */
   --marker-min: 8px;             /* 마커 최소 크기 */
 
   --shadow-1: 0 1px 2px rgba(11, 11, 11, 0.06);
   --shadow-2: 0 4px 12px rgba(11, 11, 11, 0.08);
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 14px rgba(11, 11, 11, 0.05);
   --dur: 180ms;
+
+  /* ── 별칭 — 셸(app.css)과 NumPy Lab 에서 가져온 위젯 CSS 가 쓰는 이름.
+   * var() 는 쓰는 시점에 풀리므로 여기 한 번만 선언하면 다크 재선언을 그대로 따라간다.
+   * 새 이름을 만들지 말고 이 표를 통해 역할 토큰을 가리켜라. */
+  --page:      var(--surface-page);
+  --surface:   var(--surface-1);
+  --surface-2: var(--surface-sunken);
+  --ink:       var(--ink-1);
+  --grid-line: var(--grid);
+  --font:      var(--font-sans);
+  --mono:      var(--font-mono);
+  --s1:        var(--c-original);
+  --s2:        var(--c-copy);
+  --s3:        var(--c-result);
+  --s1-wash:   var(--c-original-wash);
+  --s2-wash:   var(--c-copy-wash);
+  --s3-wash:   var(--c-result-wash);
+  --crit-wash: var(--c-danger-wash);
+  --good:      var(--c-good);
+  --warning:   var(--c-warning);
+  --critical:  var(--c-danger);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -100,14 +138,16 @@
     color-scheme: dark;
     --surface-1: #1a1a19;
     --surface-page: #0d0d0d;
-    --surface-raised: #212120;
-    --surface-sunken: #141413;
+    --surface-raised: #1a1a19;
+    --surface-sunken: #232322;
+    --surface-3: #2c2c2a;
     --ink-1: #ffffff;
     --ink-2: #c3c2b7;
     --ink-muted: #898781;
     --grid: #2c2c2a;
     --axis: #383835;
     --border: rgba(255, 255, 255, 0.10);
+    --border-2: rgba(255, 255, 255, 0.18);
 
     --c-original: #3987e5;
     --c-copy: #d95926;
@@ -117,6 +157,13 @@
     --c-good: #0ca30c;
     --c-na: #898781;
     --c-focus-ring: var(--ink-1);
+    --success-text: #0ca30c;
+
+    --c-original-wash: rgba(57, 135, 229, 0.22);
+    --c-copy-wash: rgba(217, 89, 38, 0.22);
+    --c-result-wash: rgba(25, 158, 112, 0.24);
+    --c-danger-wash: rgba(208, 59, 59, 0.22);
+    --c-good-wash: rgba(12, 163, 12, 0.16);
 
     /* 다크에서는 3색 모두 3:1 이상이라 relief 가 필요 없다 */
     --relief-required: 0;
@@ -124,6 +171,7 @@
     --seq-ordinal-min: #184f95;   /* 다크에서는 600 보다 어둡게 가지 않는다 */
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -131,14 +179,16 @@
   color-scheme: dark;
   --surface-1: #1a1a19;
   --surface-page: #0d0d0d;
-  --surface-raised: #212120;
-  --surface-sunken: #141413;
+  --surface-raised: #1a1a19;
+  --surface-sunken: #232322;
+  --surface-3: #2c2c2a;
   --ink-1: #ffffff;
   --ink-2: #c3c2b7;
   --ink-muted: #898781;
   --grid: #2c2c2a;
   --axis: #383835;
   --border: rgba(255, 255, 255, 0.10);
+  --border-2: rgba(255, 255, 255, 0.18);
 
   --c-original: #3987e5;
   --c-copy: #d95926;
@@ -148,10 +198,17 @@
   --c-good: #0ca30c;
   --c-na: #898781;
   --c-focus-ring: var(--ink-1);
+  --success-text: #0ca30c;
+  --c-original-wash: rgba(57, 135, 229, 0.22);
+  --c-copy-wash: rgba(217, 89, 38, 0.22);
+  --c-result-wash: rgba(25, 158, 112, 0.24);
+  --c-danger-wash: rgba(208, 59, 59, 0.22);
+  --c-good-wash: rgba(12, 163, 12, 0.16);
   --relief-required: 0;
   --seq-ordinal-min: #184f95;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 /* ─────────────────────────────────────────────── 기본 */
@@ -168,18 +225,35 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 { line-height: var(--lh-tight); margin: 0 0 var(--sp-3); font-weight: 650; }
+h1, h2, h3, h4 {
+  line-height: var(--lh-tight); margin: 0 0 var(--sp-3);
+  font-weight: 650; letter-spacing: -0.01em;
+}
 h1 { font-size: var(--fs-xl); }
 h2 { font-size: var(--fs-lg); }
 h3 { font-size: var(--fs-base); }
 p { margin: 0 0 var(--sp-4); }
-a { color: var(--c-original); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a { color: var(--c-original); text-decoration: none; text-underline-offset: 2px; }
+a:hover { text-decoration: underline; }
+button { font-family: inherit; font-size: inherit; }
+
+/* 본문 리듬용 유틸 — NumPy Lab 과 같은 이름·같은 값 */
+.h-chapter { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.15rem); margin: 0 0 .2em; }
+.h-sec  { font-size: 1.32rem; margin: 2.6em 0 .7em; }
+.h-sub  { font-size: 1.06rem; margin: 1.9em 0 .5em; color: var(--ink-1); }
+.lede   { color: var(--ink-2); font-size: 1.03rem; margin-bottom: 1.6em; }
+.muted  { color: var(--ink-muted); }
+.small  { font-size: .875rem; }
+.nowrap { white-space: nowrap; }
 
 code, pre, .mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
-code {
+code:not(pre code) {
+  font-size: .89em;
   background: var(--surface-sunken);
-  padding: 1px var(--sp-1);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-mark);
+  padding: .08em .38em;
+  white-space: nowrap;
 }
 pre {
   background: var(--surface-sunken);
@@ -192,9 +266,11 @@ pre {
 }
 pre code { background: none; padding: 0; }
 
+/* 키보드 포커스 링은 데이터 강조(.is-focus)와 다른 것이다 — 그쪽은 잉크 링을 쓴다 */
 :focus-visible {
-  outline: var(--focus-ring-width) solid var(--c-focus-ring);
+  outline: var(--focus-ring-width) solid var(--s1);
   outline-offset: 2px;
+  border-radius: var(--radius-mark);
 }
 
 /* ─────────────────────────────────────────────── 조각 */
@@ -203,14 +279,17 @@ pre code { background: none; padding: 0; }
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--sp-5);
-  margin: 0 0 var(--sp-5);
+  padding: 1.15rem 1.3rem 1.3rem;
+  margin: 1.5em 0;
+  box-shadow: var(--shadow);
 }
 
+/* 카드 제목 — 장 안의 소제목 노릇을 한다. 오른쪽 목차가 이걸 긁어 간다 */
 .panel-title {
-  font-size: var(--fs-sm);
+  font-size: 1.02rem;
   font-weight: 650;
-  color: var(--ink-2);
+  color: var(--ink-1);
+  letter-spacing: -0.01em;
   margin: 0 0 var(--sp-3);
 }
 
@@ -235,15 +314,29 @@ pre code { background: none; padding: 0; }
 }
 .code-hint { font-size: var(--fs-xs); color: var(--ink-muted); }
 
+/* 콜아웃. NumPy Lab 의 .callout 과 같은 모양이다 */
 .note {
   border-left: 3px solid var(--axis);
-  padding: var(--sp-2) 0 var(--sp-2) var(--sp-4);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  padding: .7rem .95rem;
   color: var(--ink-2);
-  margin: 0 0 var(--sp-4);
+  font-size: .95rem;
+  margin: 1.1em 0;
+}
+.note-label {
+  display: block; font-weight: 700; font-size: .8rem;
+  letter-spacing: .03em; margin-bottom: .18em;
 }
 /* 경고는 색만으로 말하지 않는다 — 아이콘과 라벨이 함께 온다 */
-.note--danger { border-left-color: var(--c-danger); }
-.note--danger .note-label { color: var(--c-danger); font-weight: 650; }
+.note--danger { border-left-color: var(--c-danger); background: var(--c-danger-wash); }
+.note--danger .note-label { color: var(--c-danger); }
+.note--why { border-left-color: var(--s1); }
+.note--why .note-label { color: var(--s1); }
+.note--tip { border-left-color: var(--good); }
+.note--tip .note-label { color: var(--success-text); }
+.note--ver { border-left-color: var(--warning); }
+.note--ver .note-label { color: var(--ink-2); }
 
 /* 강조는 색이 아니라 링이다 */
 .is-focus {
@@ -274,19 +367,21 @@ pre code { background: none; padding: 0; }
 
 /* ─────────────────────────────────────────────── 표 */
 
-.tbl-wrap { overflow-x: auto; }     /* 넓은 표는 자기 안에서 스크롤 */
+.tbl-wrap { overflow-x: auto; margin: 1em 0; }   /* 넓은 표는 자기 안에서 스크롤 */
 table.tbl {
   border-collapse: collapse;
-  font-size: var(--fs-sm);
+  font-size: .88rem;
   font-variant-numeric: tabular-nums;  /* 세로로 정렬돼야 하는 곳에만 */
   width: 100%;
 }
 table.tbl th, table.tbl td {
-  padding: var(--sp-2) var(--sp-3);
+  padding: .42rem .6rem;
   text-align: right;
   border-bottom: 1px solid var(--grid);
   white-space: nowrap;
 }
+table.tbl tbody tr:hover { background: var(--surface-2); }
+table.tbl code { white-space: nowrap; }
 table.tbl th {
   color: var(--ink-2);
   font-weight: 650;
@@ -308,42 +403,73 @@ table.tbl tr.hl td { background: color-mix(in oklab, var(--c-original) 10%, tran
 
 button, .btn {
   font: inherit;
-  font-size: var(--fs-sm);
+  font-size: .88rem;
+  font-weight: 600;
   color: var(--ink-1);
-  background: var(--surface-raised);
-  border: 1px solid var(--axis);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
-  padding: var(--sp-2) var(--sp-3);
+  padding: .4rem .8rem;
   cursor: pointer;
   transition: background var(--dur), border-color var(--dur);
 }
-button:hover, .btn:hover { background: var(--surface-sunken); }
+button:hover, .btn:hover { background: var(--surface-2); }
 button[aria-pressed="true"], .btn.is-on {
   border-color: var(--c-original);
   box-shadow: inset 0 0 0 1px var(--c-original);
   font-weight: 650;
 }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+
+/* 세그먼트 컨트롤 (테마 전환 등) — 트랙 위에서 눌린 칸만 떠오른다 */
+.seg {
+  display: inline-flex; background: var(--surface-3);
+  border-radius: var(--radius-sm); padding: 2px; gap: 2px;
+}
+.seg > button {
+  border: 0; background: transparent; color: var(--ink-2);
+  padding: .32rem .68rem; border-radius: var(--radius-mark);
+  font-size: .85rem; font-weight: 600; font-family: var(--font-mono);
+  white-space: nowrap; box-shadow: none;
+}
+.seg > button[aria-pressed="true"] {
+  background: var(--surface); color: var(--ink-1); box-shadow: var(--shadow);
+}
+.seg > button:hover:not([aria-pressed="true"]) { color: var(--ink-1); background: transparent; }
 
 input[type="range"] { width: 100%; accent-color: var(--c-original); }
 input[type="text"], input[type="number"], select {
   font: inherit;
   font-size: var(--fs-sm);
   color: var(--ink-1);
-  background: var(--surface-sunken);
-  border: 1px solid var(--axis);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
-  padding: var(--sp-2);
+  padding: .4rem .55rem;
 }
 
 .control-row {          /* 필터는 차트 위에 한 줄로 */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-3);
-  margin: 0 0 var(--sp-4);
+  gap: .6rem 1.1rem;
+  margin: 0 0 1.15rem;
 }
-.control-label { font-size: var(--fs-xs); color: var(--ink-2); }
+/* 컨트롤이 둘 이상이면 한 판으로 묶는다 — NumPy Lab 의 .controls 와 같은 모양이다.
+ * 컨트롤이 하나뿐인 줄까지 상자에 넣으면 버튼 하나가 과장돼 보이므로 :has() 로 가른다.
+ * :has() 를 모르는 브라우저는 이 규칙만 무시하고 나머지는 그대로 쓴다. */
+.control-row:has(> :nth-child(2)) {
+  padding: .75rem .9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.control-label {
+  font-size: .74rem; font-weight: 650; letter-spacing: .04em;
+  color: var(--ink-2); text-transform: uppercase;
+}
 
 /* ─────────────────────────────────────────────── 차트 */
 
@@ -394,6 +520,38 @@ input[type="text"], input[type="number"], select {
   background-color: transparent;
 }
 
+/* ─────────────────────────────────────────────── 확인 문제
+ * NumPy Lab 의 .quiz 와 같은 모양이다. 보기는 줄로 쌓이고 A·B·C 표식이 앞에 온다.
+ * 정답·오답은 색만으로 말하지 않는다 — 표식 글자와 테두리가 함께 바뀐다. */
+
+.quiz { counter-reset: qn; }
+.q { border-top: 1px solid var(--grid); padding: 1rem 0 .4rem; }
+.q:first-child { border-top: 0; padding-top: 0; }
+.q-stem { font-weight: 600; margin: 0 0 .6rem; }
+.q-stem::before {
+  counter-increment: qn; content: "Q" counter(qn) ". ";
+  color: var(--s1); font-family: var(--font-mono);
+}
+.q-choices { display: flex; flex-direction: column; gap: .35rem; margin: 0 0 .5rem; }
+.q-choice {
+  display: flex; gap: .55rem; align-items: flex-start;
+  border: 1px solid var(--border); background: var(--surface-2);
+  border-radius: var(--radius-sm); padding: .45rem .7rem; cursor: pointer;
+  font-size: .93rem; font-weight: 400; text-align: left; color: var(--ink-1);
+}
+.q-choice:hover { border-color: var(--s1); background: var(--surface-2); }
+.q-choice .mk { font-family: var(--font-mono); color: var(--ink-muted); flex: none; font-weight: 700; }
+.q-choice[data-state="right"] { border-color: var(--good); background: var(--c-good-wash); }
+.q-choice[data-state="wrong"] { border-color: var(--critical); background: var(--c-danger-wash); }
+.q-choice[data-state="right"] .mk { color: var(--success-text); }
+.q-choice[data-state="wrong"] .mk { color: var(--critical); }
+.q-explain {
+  font-size: .9rem; color: var(--ink-2);
+  border-left: 3px solid var(--good); background: var(--surface-2);
+  padding: .55rem .8rem; border-radius: var(--radius-sm); margin: .4rem 0 0;
+}
+.q-explain[hidden] { display: none; }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
 }
@@ -405,64 +563,160 @@ input[type="text"], input[type="number"], select {
 }
 
 /* ===== app.css ===== */
-/* app.css — 레이아웃
- * 색·타이포는 theme.css 가 정한다. 여기는 배치만 다룬다.
+/* app.css — 셸 레이아웃 (사이드바 + 본문)
+ *
+ * NumPy Lab(https://yakimbss26.github.io/numpy-lab/)과 **같은 셸**이다.
+ * 두 사이트는 한 학기에 함께 쓰이므로 학생이 옮겨 다녀도 같은 자리를 눌러야 한다.
+ * 구조를 바꿔야 하면 양쪽을 같이 바꾼다.
+ *
+ * 색·타이포·형태는 theme.css 가 정한다. 여기는 배치만 다룬다.
  * 넓은 내용(표·차트·코드)은 자기 안에서 스크롤하고, 페이지 몸통은 절대 가로 스크롤하지 않는다.
  */
 
-.lab-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-3) var(--sp-5);
-  background: var(--surface-raised);
+.shell { display: flex; min-height: 100vh; }
+
+/* ------------------------------------------------------------- 사이드바 */
+
+.sidebar {
+  width: 268px; flex: none;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+}
+.brand {
+  padding: 1.1rem 1.2rem .75rem;
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 20;
 }
-
-.lab-brand { font-weight: 700; font-size: var(--fs-lg); }
-
-.lab-shell {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);   /* minmax(0,1fr) 이 있어야 자식이 넘쳐도 몸통이 안 늘어난다 */
-  gap: var(--sp-5);
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: var(--sp-5);
-  align-items: start;
+.brand .logo {
+  display: flex; align-items: center; gap: .55rem;
+  font-weight: 700; font-size: 1.06rem; letter-spacing: -0.01em;
 }
-
-.lab-nav {
-  position: sticky;
-  top: 72px;
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--sp-4);
-  max-height: calc(100vh - 96px);
-  overflow-y: auto;
+.brand .logo .mark {
+  width: 26px; height: 26px; border-radius: 7px; flex: none;
+  background: var(--s1); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: .78rem; font-weight: 700;
 }
+.brand .tag { font-size: .76rem; color: var(--ink-muted); margin-top: .15rem; }
 
-.lab-main { min-width: 0; }        /* 그리드 자식의 기본 min-width:auto 를 풀어 준다 */
-.lab-main > h1 { margin-bottom: var(--sp-4); }
+.nav { flex: 1; overflow-y: auto; padding: .6rem .55rem 1.5rem; }
+.nav-group {
+  font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-muted); padding: .9rem .65rem .3rem;
+}
+.nav a {
+  display: flex; align-items: center; gap: .55rem;
+  padding: .42rem .65rem; border-radius: var(--radius-sm);
+  color: var(--ink-2); font-size: .9rem; text-decoration: none;
+  line-height: 1.35;
+}
+.nav a:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.nav a.on { background: var(--s1-wash); color: var(--s1); font-weight: 650; }
+.nav a .num {
+  font-family: var(--mono); font-size: .74rem; color: var(--ink-muted);
+  min-width: 1.1rem; flex: none; text-align: right;
+}
+.nav a.on .num { color: var(--s1); }
+/* 진도 점 — 회색은 방문, 초록은 확인 문제까지 다 맞힌 장 */
+.nav a .dot {
+  width: 6px; height: 6px; border-radius: 50%; flex: none; margin-left: auto;
+  background: transparent;
+}
+.nav a .dot.seen { background: var(--axis); }
+.nav a .dot.done { background: var(--good); }
 
-/* 모바일: 사이드바를 위로 접는다 */
-@media (max-width: 860px) {
-  .lab-shell {
-    grid-template-columns: minmax(0, 1fr);
-    padding: var(--sp-4);
+.side-foot {
+  border-top: 1px solid var(--border);
+  padding: .7rem .9rem; display: flex; gap: .45rem; align-items: center; flex-wrap: wrap;
+}
+.side-foot .btn { padding: .28rem .6rem; font-size: .8rem; }
+.prog-line { width: 100%; font-size: .74rem; color: var(--ink-muted); }
+.prog-bar { height: 4px; background: var(--surface-3); border-radius: 999px; overflow: hidden; margin-top: .3rem; }
+.prog-bar > i { display: block; height: 100%; background: var(--good); width: 0%; transition: width .3s; }
+
+/* ---------------------------------------------------------------- 본문 */
+
+.main { flex: 1; min-width: 0; }   /* min-width:0 이 있어야 넓은 표가 몸통을 늘리지 않는다 */
+.main-inner { max-width: 900px; margin: 0 auto; padding: 2.2rem 2rem 6rem; }
+.crumb {
+  font-size: .76rem; color: var(--ink-muted); font-weight: 650;
+  letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem;
+}
+.chapter-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 3.5rem; padding-top: 1.2rem; border-top: 1px solid var(--grid-line);
+}
+.chapter-nav a {
+  display: block; max-width: 46%; color: var(--ink-2); text-decoration: none;
+  font-size: .9rem; padding: .6rem .9rem; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+}
+.chapter-nav a:hover { border-color: var(--s1); color: var(--s1); text-decoration: none; }
+.chapter-nav a .k { display: block; font-size: .7rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .06em; }
+.chapter-nav a.next { text-align: right; margin-left: auto; }
+
+.topbar {
+  display: none; position: sticky; top: 0; z-index: 20;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: .55rem .8rem; align-items: center; gap: .6rem;
+}
+.topbar .logo { font-weight: 700; font-size: .95rem; }
+
+/* 오른쪽 목차 — 장 안의 카드 제목을 긁어서 만든다 */
+.toc {
+  position: fixed; right: 1.2rem; top: 2.4rem; width: 168px;
+  font-size: .8rem; line-height: 1.5; color: var(--ink-muted);
+  border-left: 1px solid var(--grid-line); padding-left: .8rem;
+  max-height: 70vh; overflow-y: auto;
+}
+.toc a { display: block; color: var(--ink-muted); padding: .16rem 0; text-decoration: none; }
+.toc a:hover, .toc a.on { color: var(--s1); text-decoration: none; }
+@media (max-width: 1320px) { .toc { display: none; } }
+
+/* ------------------------------------------------------------ 모바일 */
+
+@media (max-width: 900px) {
+  .shell { flex-direction: column; }
+  .topbar { display: flex; }
+  .sidebar {
+    position: fixed; z-index: 50; top: 0; left: 0; height: 100vh;
+    transform: translateX(-100%); transition: transform .22s;
+    box-shadow: var(--shadow); width: 82vw; max-width: 300px;
   }
-  .lab-nav { position: static; max-height: none; }
+  .sidebar.open { transform: none; }
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 45; }
+  .scrim[hidden] { display: none; }
+  .main-inner { padding: 1.3rem 1.1rem 4rem; }
 }
+
+/* ---------------------------------------------------------- 홈 화면 */
+
+.hero { padding: 1rem 0 .5rem; }
+.hero h1 { font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.7rem); letter-spacing: -0.022em; }
+.hero .sub { color: var(--ink-2); font-size: 1.06rem; max-width: 46rem; margin-top: .5rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .85rem; margin: 1.8rem 0; }
+.tile {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: .9rem 1rem;
+}
+.tile:hover { border-color: var(--s1); text-decoration: none; }
+.tile .n { font-family: var(--mono); font-size: .74rem; color: var(--s1); font-weight: 700; }
+.tile .t { font-weight: 650; margin: .12rem 0 .2rem; }
+.tile .d { font-size: .84rem; color: var(--ink-muted); line-height: 1.5; }
+.tile .sim { font-size: .74rem; color: var(--s3); font-weight: 650; margin-top: .35rem; }
+
+/* ★ 표시한 장(가장 많이 틀리는 개념)은 색이 아니라 링과 글자로 구분한다 */
+.tile.key { box-shadow: inset 0 0 0 2px var(--ink-1); }
+.tile .key-mark { font-size: .72rem; font-weight: 700; color: var(--ink-1); }
 
 img, svg { max-width: 100%; }
 
   </style>
 </head>
 <body>
+  <noscript><p style="padding:2rem;font:15px system-ui,sans-serif">이 실습장은 자바스크립트가 필요하다. 브라우저에서 자바스크립트를 켜라.</p></noscript>
   <div id="lab-root"></div>
   <script>
 /* ===== core/df.js ===== */
@@ -2634,10 +2888,7 @@ img, svg { max-width: 100%; }
 
   /* 클립보드에 쓴다. https 가 아니거나 file:// 로 열면 navigator.clipboard 가 없으므로
    * textarea + execCommand 로 되돌아간다(단일 파일 배포본을 그냥 열어도 동작해야 한다). */
-  function copyToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text);
-    }
+  function legacyCopy(text) {
     return new Promise(function (resolve, reject) {
       var ta = document.createElement('textarea');
       ta.value = text;
@@ -2650,6 +2901,18 @@ img, svg { max-width: 100%; }
       ta.remove();
       ok ? resolve() : reject(new Error('복사할 수 없다'));
     });
+  }
+
+  function copyToClipboard(text) {
+    /* ★ clipboard API 가 **있어도 거부될 수 있다**(창에 포커스가 없을 때 등).
+     * 그래서 없을 때만이 아니라 거부됐을 때도 textarea 로 되돌아간다.
+     * 이걸 빠뜨리면 정상적인 상황에서도 "복사할 수 없다" 로 떨어진다. */
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return legacyCopy(text);
+      });
+    }
+    return legacyCopy(text);
   }
 
   /* 코드 블록. 실행하지 않는다 — 옆의 결과는 엔진이 계산한 실제 값이다.
@@ -2756,28 +3019,137 @@ img, svg { max-width: 100%; }
     return box;
   }
 
+  // ─────────────────────────────────────────────── 세그먼트 컨트롤
+
+  /* seg({value, options:[{value,label}], onChange}) — 테마 전환처럼 값이 하나인 선택.
+   * 눌린 칸만 떠오른다. NumPy Lab 과 같은 위젯이다. */
+  function seg(opts) {
+    var cur = opts.value;
+    var btns = (opts.options || []).map(function (op) {
+      var val = typeof op === 'string' ? op : op.value;
+      var lab = typeof op === 'string' ? op : op.label;
+      return el('button', {
+        type: 'button', text: lab,
+        'aria-pressed': String(val) === String(cur) ? 'true' : 'false',
+        onclick: function () { set(val); if (opts.onChange) opts.onChange(val); }
+      });
+    });
+    var box = el('div.seg', { role: 'group', 'aria-label': opts.label || null }, btns);
+    function set(val) {
+      cur = val;
+      btns.forEach(function (b, i) {
+        var op = opts.options[i];
+        var v = typeof op === 'string' ? op : op.value;
+        b.setAttribute('aria-pressed', String(v) === String(val) ? 'true' : 'false');
+      });
+    }
+    box.setValue = set;
+    return box;
+  }
+
+  function btn(label, onClick, opts) {
+    opts = opts || {};
+    return el('button' + (opts.primary ? '.btn.primary' : '.btn'), {
+      type: 'button', text: label, onclick: onClick
+    });
+  }
+
+  // ─────────────────────────────────────────────── 진도
+
+  /* 방문한 장과 맞힌 문제를 이 브라우저에만 저장한다.
+   * 사이드바의 점(회색=방문, 초록=문제 전부 정답)과 진도 막대가 이걸 읽는다. */
+  var PROG_KEY = 'pandas-lab/progress-v1';
+  var progListeners = [];
+  var quizSeq = {};
+
+  var progress = {
+    chapter: null,           // 지금 화면에 그려지는 장. app.js 가 세운다
+    load: function () {
+      try { return JSON.parse(localStorage.getItem(PROG_KEY) || '{}'); } catch (e) { return {}; }
+    },
+    save: function (d) { try { localStorage.setItem(PROG_KEY, JSON.stringify(d)); } catch (e) { /* 저장소가 막혀도 앱은 돈다 */ } },
+    mark: function (k, ok) { var d = this.load(); d[k] = !!ok; this.save(d); emitProgress(); },
+    visit: function (id) { var d = this.load(); d['visit:' + id] = true; this.save(d); emitProgress(); },
+    /* total 은 **그 장에 있는 문제 수**다. 답한 문제 수가 아니다 —
+     * 답한 것만 세면 한 문제만 맞혀도 "다 맞혔다" 로 보여 점이 거짓말을 한다. */
+    stats: function (id) {
+      var d = this.load(), answered = 0, ok = 0;
+      for (var k in d) if (k.indexOf(id + ':q') === 0) { answered++; if (d[k]) ok++; }
+      var tot = d['count:' + id];
+      if (typeof tot !== 'number') tot = answered;      // 아직 그려 본 적이 없는 장
+      return { total: tot, answered: answered, correct: ok, visited: !!d['visit:' + id] };
+    },
+    reset: function () { this.save({}); emitProgress(); },
+    /* 장을 그리기 직전에 부른다. 그 장의 문제 번호를 0 부터 다시 매긴다 —
+     * 번호가 렌더마다 밀리면 다시 방문했을 때 다른 문제로 기록된다. */
+    beginChapter: function (id) { this.chapter = id || null; if (id) quizSeq[id] = 0; },
+    /* 렌더가 끝난 뒤에 부른다. 그 장에 문제가 몇 개인지 확정해 저장한다. */
+    endChapter: function (id) {
+      if (!id || !quizSeq[id]) return;
+      var d = this.load();
+      if (d['count:' + id] === quizSeq[id]) return;
+      d['count:' + id] = quizSeq[id];
+      this.save(d);
+      emitProgress();
+    },
+    onChange: function (f) { progListeners.push(f); }
+  };
+  function emitProgress() { progListeners.forEach(function (f) { f(); }); }
+
   // ─────────────────────────────────────────────── 확인 문제
 
+  /* quiz({title, question, choices:[{label, correct, why}], explain})
+   * 보기는 줄로 쌓이고 A·B·C 표식이 앞에 온다. 누르면 정답 자리가 함께 드러난다.
+   * 색만으로 말하지 않는다 — 표식 글자와 테두리가 같이 바뀐다. */
   function quiz(spec) {
-    var box = el('div.card');
-    box.appendChild(el('div.panel-title', { text: spec.title || '확인 문제' }));
-    box.appendChild(el('p', { text: spec.question }));
-    var result = el('div.note', { style: { display: 'none' } });
-    (spec.choices || []).forEach(function (c, i) {
-      var b = el('button', { text: c.label, style: { marginRight: '8px', marginBottom: '8px' } });
-      b.addEventListener('click', function () {
-        result.style.display = '';
-        clear(result);
-        var right = !!c.correct;
-        result.classList.toggle('note--danger', !right);
-        result.appendChild(el('span.note-label', {
-          text: right ? '✓ 맞다. ' : '✗ 아니다. '
-        }));
-        result.appendChild(document.createTextNode(c.why || spec.explain || ''));
-      });
-      box.appendChild(b);
+    var box = el('div.card.quiz');
+    if (spec.title !== null) box.appendChild(el('div.panel-title', { text: spec.title || '확인 문제' }));
+
+    /* 장 안에서 만들어진 순서가 곧 문제 번호다. beginChapter 가 0 으로 되돌린다. */
+    var key = null, idx = 0;
+    if (progress.chapter) {
+      var ch = progress.chapter;
+      if (quizSeq[ch] === undefined) quizSeq[ch] = 0;
+      idx = quizSeq[ch]++;
+      key = ch + ':q' + idx;
+    }
+    /* Q 번호는 **장 전체에서** 이어진다. 카드마다 셈을 새로 시작하면 전부 Q1 이 된다. */
+    box.style.counterReset = 'qn ' + idx;
+
+    var explain = el('div.q-explain', { hidden: true });
+    var choices = spec.choices || [];
+    var answered = false;
+
+    var choiceEls = choices.map(function (c, ci) {
+      return el('button.q-choice', {
+        type: 'button',
+        onclick: function () {
+          var right = !!c.correct;
+          choiceEls.forEach(function (e, i) {
+            e.setAttribute('data-state', choices[i].correct ? 'right' : (i === ci ? 'wrong' : ''));
+          });
+          clear(explain);
+          explain.appendChild(el('b', { text: right ? '✓ 맞다. ' : '✗ 아니다. ' }));
+          explain.appendChild(document.createTextNode(c.why || spec.explain || ''));
+          explain.hidden = false;
+          // 첫 번째 답만 기록한다. 그리고 살아 있는 본문 안에서 눌렀을 때만 —
+          // 검사 하네스는 떨어진 노드에 렌더하므로 진도를 더럽히지 않는다.
+          if (key && !answered && box.closest && box.closest('#main-inner')) {
+            answered = true;
+            progress.mark(key, right);
+          }
+        }
+      }, [
+        el('span.mk', { text: 'ABCDE'[ci] || String(ci + 1) }),
+        el('span', { text: c.label })
+      ]);
     });
-    box.appendChild(result);
+
+    box.appendChild(el('div.q', null, [
+      el('div.q-stem', { text: spec.question }),
+      el('div.q-choices', null, choiceEls),
+      explain
+    ]));
     return box;
   }
 
@@ -2796,12 +3168,12 @@ img, svg { max-width: 100%; }
     bar: bar, hist: hist, scatter: scatter, legend: legend, withTableTwin: withTableTwin,
     niceTicks: niceTicks, scale: scale,
     // 컨트롤
-    slider: slider, buttonGroup: buttonGroup, toggle: toggle,
+    slider: slider, buttonGroup: buttonGroup, toggle: toggle, seg: seg, btn: btn,
     // 텍스트
     code: code, note: note, danger: danger,
     copyToClipboard: copyToClipboard, PREAMBLE: PREAMBLE,
-    // 단계·문제
-    stepper: stepper, quiz: quiz
+    // 단계·문제·진도
+    stepper: stepper, quiz: quiz, progress: progress
   };
 
   if (typeof window !== 'undefined') window.UI = UI;
@@ -2836,7 +3208,7 @@ img, svg { max-width: 100%; }
 })();
 
 /* ===== core/app.js ===== */
-/* app.js — 셸 (챕터 등록소 · 라우터 · 진도 · 테마)
+/* app.js — 셸 (챕터 등록소 · 라우터 · 사이드바 · 진도 · 테마)
  *
  * ★★ 가장 비쌌던 버그: 이 파일은 **모듈보다 먼저** 로드되어야 한다.
  *    모듈은 로드 시점에 Lab.register(...) 를 부르는데, 그때 window.Lab 이 없으면
@@ -2848,24 +3220,29 @@ img, svg { max-width: 100%; }
  * ★ render(root) 는 여러 번 호출된다. 장을 다시 방문하면 다시 불린다.
  *    모듈 전역에 가변 상태를 두지 말고 render 안의 지역 변수 + rebuild() 를 써라.
  *
+ * ★ 셸의 생김새는 NumPy Lab(https://yakimbss26.github.io/numpy-lab/)과 같다.
+ *    두 사이트를 한 학기에 함께 쓰므로 사이드바·홈 화면·이전/다음 자리가 같아야 한다.
+ *    구조를 바꾸려면 양쪽을 같이 바꾼다. 배치는 app.css, 색·형태는 theme.css.
+ *
  * ES 모듈 문법 금지 — 단일 파일 배포본에 인라인되므로 깨진다.
  */
 (function () {
   'use strict';
 
   var STORE_KEY = 'pandas-lab/v1';
-  var chapters = [];        // {id, num, title, subtitle, render}
+  var chapters = [];        // {id, num, title, subtitle, sim, key, render}
   var byId = {};
   var mounted = null;       // 현재 그려진 장 id
-  var firstRenderDone = false;
+  var opts = {};
+  var navLinks = {};        // id -> {a, dot}
   var state = load();
 
   function load() {
     try {
       var raw = localStorage.getItem(STORE_KEY);
-      return raw ? JSON.parse(raw) : { done: {}, theme: null };
+      return raw ? JSON.parse(raw) : { theme: null };
     } catch (e) {
-      return { done: {}, theme: null };   // 저장소가 막혀 있어도 앱은 돌아야 한다
+      return { theme: null };   // 저장소가 막혀 있어도 앱은 돌아야 한다
     }
   }
   function save() {
@@ -2875,7 +3252,14 @@ img, svg { max-width: 100%; }
   // ─────────────────────────────────────────────── 등록
 
   /* 모듈이 자기를 등록한다.
-   *   Lab.register({ id:'ch07-copy', num:7, title:'뷰와 복사', render:function(root){…} }) */
+   *   Lab.register({
+   *     id: 'ch07-copy', num: 7,
+   *     title: '뷰와 복사, Copy-on-Write',
+   *     subtitle: '한 줄 소개 — 홈 타일과 장 머리에 함께 쓴다',
+   *     sim: '참조 카운트 실험실 · 연쇄 할당',   // 홈 타일의 시뮬레이터 요약 (없으면 생략)
+   *     key: true,                              // 가장 많이 틀리는 개념 (★)
+   *     render: function (root) { … }
+   *   }) */
   function register(spec) {
     if (!spec || !spec.id) throw new Error('register: id 가 필요하다');
     if (typeof spec.render !== 'function') throw new Error('register: ' + spec.id + ' 에 render 가 없다');
@@ -2887,121 +3271,6 @@ img, svg { max-width: 100%; }
     chapters.push(spec);
   }
 
-  // ─────────────────────────────────────────────── 라우터
-
-  function currentId() {
-    var h = (location.hash || '').replace(/^#\/?/, '');
-    return h && byId[h] ? h : (chapters.length ? chapters[0].id : null);
-  }
-
-  function go(id) {
-    if (location.hash.replace(/^#\/?/, '') === id) render();
-    else location.hash = '#/' + id;
-  }
-
-  function render() {
-    var id = currentId();
-    if (!id) return;
-    var main = document.getElementById('lab-main');
-    if (!main) return;
-    var spec = byId[id];
-
-    // 같은 장을 다시 그릴 때도 root 를 완전히 비운다.
-    // 모듈이 root 밖에 상태를 두면 여기서 새지만, 그건 모듈의 잘못이다(위 주석 참고).
-    UI.clear(main);
-    mounted = id;
-
-    var head = UI.el('div');
-    head.appendChild(UI.el('h1', { text: (spec.num ? spec.num + '장. ' : '') + spec.title }));
-    if (spec.subtitle) head.appendChild(UI.el('p.note', { text: spec.subtitle }));
-    main.appendChild(head);
-
-    var body = UI.el('div');
-    main.appendChild(body);
-    try {
-      spec.render(body);
-    } catch (e) {
-      body.appendChild(UI.danger('이 장을 그리는 중 오류', String(e && e.message || e)));
-      console.error('[Lab] ' + id + ' render 실패', e);
-    }
-
-    main.appendChild(footer(spec));
-    drawNav();
-
-    /* 장을 **옮길 때만** 맨 위로 올린다.
-     * 첫 렌더에서 스크롤하면 앱을 열자마자 장 제목을 지나친 위치에서 시작한다.
-     * (scrollIntoView 는 sticky 헤더 높이를 고려하지 않아 제목이 헤더 밑에 깔리기도 한다.) */
-    if (firstRenderDone) window.scrollTo({ top: 0, behavior: 'auto' });
-    firstRenderDone = true;
-
-    document.title = (spec.num ? spec.num + '장 · ' : '') + spec.title + ' — Pandas Lab';
-  }
-
-  function footer(spec) {
-    var box = UI.el('div.card');
-    var row = UI.el('div.control-row');
-    var i = chapters.indexOf(spec);
-    var doneBtn = UI.toggle({
-      label: state.done[spec.id] ? '✓ 다 봤음' : '다 봤음으로 표시',
-      value: !!state.done[spec.id],
-      onChange: function (on) {
-        state.done[spec.id] = on;
-        save();
-        doneBtn.textContent = on ? '✓ 다 봤음' : '다 봤음으로 표시';
-        drawNav();
-      }
-    });
-    row.appendChild(doneBtn);
-    if (i > 0) {
-      var p = UI.el('button', { text: '← ' + chapters[i - 1].title });
-      p.addEventListener('click', function () { go(chapters[i - 1].id); });
-      row.appendChild(p);
-    }
-    if (i < chapters.length - 1) {
-      var n = UI.el('button', { text: chapters[i + 1].title + ' →' });
-      n.addEventListener('click', function () { go(chapters[i + 1].id); });
-      row.appendChild(n);
-    }
-    box.appendChild(row);
-    return box;
-  }
-
-  // ─────────────────────────────────────────────── 네비게이션
-
-  function drawNav() {
-    var nav = document.getElementById('lab-nav');
-    if (!nav) return;
-    UI.clear(nav);
-    var cur = currentId();
-    var doneCount = chapters.filter(function (c) { return state.done[c.id]; }).length;
-
-    nav.appendChild(UI.el('div.panel-title', {
-      text: '진도 ' + doneCount + ' / ' + chapters.length
-    }));
-
-    var list = UI.el('div');
-    chapters.forEach(function (c) {
-      var item = UI.el('button', {
-        style: { display: 'block', width: '100%', textAlign: 'left', marginBottom: '4px' },
-        'aria-pressed': c.id === cur ? 'true' : 'false'
-      });
-      item.appendChild(document.createTextNode(
-        (state.done[c.id] ? '✓ ' : '') + (c.num ? c.num + '. ' : '') + c.title
-      ));
-      item.addEventListener('click', function () { go(c.id); });
-      list.appendChild(item);
-    });
-    nav.appendChild(list);
-
-    var reset = UI.el('button', { text: '진도 초기화', style: { marginTop: '12px' } });
-    reset.addEventListener('click', function () {
-      state.done = {};
-      save();
-      drawNav();
-    });
-    nav.appendChild(reset);
-  }
-
   // ─────────────────────────────────────────────── 테마
 
   /* data-theme 을 루트에 도장한다. 토글이 OS 설정을 양방향으로 이겨야 한다. */
@@ -3010,26 +3279,279 @@ img, svg { max-width: 100%; }
     if (state.theme === 'dark' || state.theme === 'light') root.setAttribute('data-theme', state.theme);
     else root.removeAttribute('data-theme');
   }
-
-  function themeButton() {
-    var b = UI.el('button', { text: themeLabel() });
-    b.addEventListener('click', function () {
-      state.theme = state.theme === 'dark' ? 'light' : state.theme === 'light' ? null : 'dark';
-      save();
-      applyTheme();
-      b.textContent = themeLabel();
-    });
-    return b;
+  function setTheme(t) {
+    state.theme = (t === 'auto') ? null : t;
+    save();
+    applyTheme();
   }
-  function themeLabel() {
-    return state.theme === 'dark' ? '◐ 어둡게' : state.theme === 'light' ? '◑ 밝게' : '◓ 시스템';
+
+  // ─────────────────────────────────────────────── 사이드바
+
+  function buildSidebar() {
+    var nav = UI.el('nav.nav');
+    nav.appendChild(UI.el('a.home-link', { href: '#/' }, [
+      UI.el('span.num', { text: '⌂' }), UI.el('span', { text: '처음 화면' })
+    ]));
+    nav.appendChild(UI.el('div.nav-group', { text: '학습 과정' }));
+    chapters.forEach(function (c) {
+      var dot = UI.el('span.dot');
+      var a = UI.el('a', { href: '#/' + c.id, 'data-id': c.id }, [
+        UI.el('span.num', { text: String(c.num) }),
+        UI.el('span', { text: c.title }),
+        dot
+      ]);
+      navLinks[c.id] = { a: a, dot: dot };
+      nav.appendChild(a);
+    });
+
+    var progText = UI.el('div');
+    var progFill = UI.el('i');
+
+    var foot = UI.el('div.side-foot', null, [
+      UI.seg({
+        label: '테마',
+        value: state.theme || 'auto',
+        options: [
+          { value: 'auto', label: '자동' },
+          { value: 'light', label: '밝게' },
+          { value: 'dark', label: '어둡게' }
+        ],
+        onChange: setTheme
+      }),
+      UI.btn('진도 초기화', function () {
+        if (confirm('방문 기록과 맞힌 문제를 모두 지운다. 계속하겠는가?')) UI.progress.reset();
+      }),
+      opts.bookHref ? UI.el('a.btn', { href: opts.bookHref, text: '교재 보기' }) : null,
+      UI.el('div.prog-line', null, [progText, UI.el('div.prog-bar', null, [progFill])])
+    ]);
+
+    var side = UI.el('aside.sidebar', { id: 'sidebar' }, [
+      UI.el('div.brand', null, [
+        UI.el('a.logo', { href: '#/', style: { color: 'inherit' } }, [
+          UI.el('span.mark', { text: 'pd' }),
+          UI.el('span', { text: opts.title || 'Pandas Lab' })
+        ]),
+        UI.el('div.tag', { text: '과학고 1학년 심화 학습 · 시뮬레이터 내장' })
+      ]),
+      nav,
+      foot
+    ]);
+
+    function refresh() {
+      var seen = 0, okQ = 0;
+      chapters.forEach(function (c) {
+        var st = UI.progress.stats(c.id);
+        var d = navLinks[c.id].dot;
+        /* 초록은 그 장의 문제를 **전부** 맞혔을 때만. 하나 맞히고 초록이 되면 점이 거짓말을 한다. */
+        var allRight = st.total > 0 && st.correct === st.total;
+        d.className = 'dot' + (allRight ? ' done' : (st.visited ? ' seen' : ''));
+        d.title = c.num + '장 — ' + (allRight ? '확인 문제 전부 정답'
+          : st.visited ? '방문함 (문제 ' + st.correct + '/' + (st.total || '?') + ')' : '아직 안 봄');
+        if (st.visited) seen++;
+        okQ += st.correct;
+      });
+      progText.textContent = '방문 ' + seen + '/' + chapters.length + ' · 문제 ' + okQ + '문 정답';
+      progFill.style.width = (chapters.length ? (seen / chapters.length * 100) : 0).toFixed(0) + '%';
+    }
+    UI.progress.onChange(refresh);
+    refresh();
+    return side;
+  }
+
+  // ─────────────────────────────────────────────── 홈 화면
+
+  function renderHome(main) {
+    main.appendChild(UI.el('div.hero', null, [
+      UI.el('h1', { text: opts.title || 'Pandas Lab' }),
+      UI.el('p.sub', {
+        html: 'pandas 를 <b>읽어서 외우는 대신 직접 움직여 보며</b> 배우는 실습장이다. ' +
+          '연산이 왜 인덱스로 짝을 맞추는지, 자른 표가 언제 원본과 메모리를 나눠 쓰는지, ' +
+          'groupby 가 실제로 어떤 행을 묶는지 — 모두 화면에서 직접 확인할 수 있다.'
+      }),
+      UI.el('p.sub.small', {
+        html: '이 페이지 안에는 브라우저에서 도는 <b>미니 DataFrame 엔진</b>이 들어 있다. ' +
+          '보이는 숫자는 미리 적어 둔 값이 아니라 <b>그 자리에서 계산한 결과</b>다. ' +
+          '설치도, 인터넷도 필요 없다.'
+      })
+    ]));
+
+    var tiles = UI.el('div.tiles');
+    chapters.forEach(function (c) {
+      tiles.appendChild(UI.el('a.tile' + (c.key ? '.key' : ''), { href: '#/' + c.id }, [
+        UI.el('div.n', { text: c.num + '장' }),
+        UI.el('div.t', { text: c.title }),
+        UI.el('div.d', { text: c.subtitle || '' }),
+        c.sim ? UI.el('div.sim', { text: '▸ ' + c.sim }) : null,
+        c.key ? UI.el('div.key-mark', { text: '★ 가장 많이 틀리는 개념' }) : null
+      ]));
+    });
+    main.appendChild(tiles);
+
+    main.appendChild(UI.note(
+      '왼쪽 목록의 점은 진도 표시다. 회색은 방문한 장, 초록은 확인 문제를 모두 맞힌 장이다. ' +
+      '기록은 이 브라우저에만 저장되므로 다른 사람과 섞이지 않는다.', '사용법'));
+
+    main.appendChild(UI.note(
+      '화면의 파이썬 코드는 블록 오른쪽 아래 복사 버튼을 누르면 그대로 가져갈 수 있다. ' +
+      'import 와 데이터 불러오기가 빠진 코드에는 복사할 때 자동으로 붙여 주므로, ' +
+      'IDLE 편집창에 붙여넣고 F5 를 누르면 바로 돈다. ' +
+      'pandas 가 없다면 명령 프롬프트에서 pip install pandas 를 한 번 실행하면 된다.',
+      'IDLE 에서 직접 실행하는 방법'));
+
+    if (window.LabData && window.LabData.synthetic) {
+      main.appendChild(UI.note(
+        '이 웹앱의 실습 데이터는 원본과 구조만 같은 합성 데이터다(지진 데이터는 USGS 실데이터). ' +
+        '교재의 값과 다를 수 있다.', '실습 데이터에 대하여'));
+    }
+
+    var simRows = chapters.filter(function (c) { return c.sim; }).map(function (c) {
+      return { ch: c.num + '장', t: c.title, s: c.sim };
+    });
+    if (simRows.length) {
+      main.appendChild(UI.el('h2.h-sec', { text: '이 실습장에 든 시뮬레이터' }));
+      main.appendChild(UI.table(
+        [{ key: 'ch', label: '장' }, { key: 't', label: '주제' }, { key: 's', label: '시뮬레이터 · 시각화' }],
+        simRows
+      ));
+    }
+  }
+
+  // ─────────────────────────────────────────────── 라우터
+
+  function currentId() {
+    return (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+  }
+
+  function go(id) {
+    if (currentId() === id) route();
+    else location.hash = '#/' + id;
+  }
+
+  function route() {
+    var main = document.getElementById('main-inner');
+    if (!main) return;
+    UI.clear(main);
+    removeToc();
+    window.scrollTo(0, 0);
+
+    var id = currentId();
+    Object.keys(navLinks).forEach(function (k) { navLinks[k].a.classList.remove('on'); });
+    var home = document.querySelector('.home-link');
+    if (home) home.classList.toggle('on', !id);
+
+    if (!id) {
+      mounted = null;
+      UI.progress.beginChapter(null);
+      renderHome(main);
+      document.title = opts.title || 'Pandas Lab';
+      closeSidebar();
+      return;
+    }
+
+    var spec = byId[id];
+    if (!spec) {
+      main.appendChild(UI.el('h1.h-chapter', { text: '없는 페이지' }));
+      main.appendChild(UI.el('p', null, [UI.el('a', { href: '#/', text: '처음 화면으로 돌아가기' })]));
+      closeSidebar();
+      return;
+    }
+
+    mounted = id;
+    if (navLinks[id]) navLinks[id].a.classList.add('on');
+    document.title = spec.num + '. ' + spec.title + ' · ' + (opts.title || 'Pandas Lab');
+
+    main.appendChild(UI.el('div.crumb', { text: spec.num + '장' }));
+    main.appendChild(UI.el('h1.h-chapter', { text: spec.title }));
+    if (spec.subtitle) main.appendChild(UI.el('p.lede', { text: spec.subtitle }));
+    if (window.LabData && window.LabData.synthetic) {
+      main.appendChild(UI.el('p.small.muted', {
+        text: '실습 데이터는 원본과 구조만 같은 합성 데이터다(지진 데이터는 USGS 실데이터).'
+      }));
+    }
+
+    /* 문제 번호를 0 부터 다시 매긴다. render 안에서 만들어지는 순서가 곧 번호다. */
+    UI.progress.beginChapter(id);
+
+    var body = UI.el('div.chapter-body');
+    main.appendChild(body);
+    try {
+      spec.render(body);
+    } catch (e) {
+      body.appendChild(UI.danger('이 장을 그리는 중 오류', String(e && e.message || e)));
+      console.error('[Lab] ' + id + ' render 실패', e);
+    }
+
+    UI.progress.endChapter(id);      // 이 장에 문제가 몇 개인지 확정한다
+    main.appendChild(chapterNav(spec));
+    buildToc(main);
+    UI.progress.visit(id);
+    closeSidebar();
+  }
+
+  function chapterNav(spec) {
+    var i = chapters.indexOf(spec);
+    var box = UI.el('div.chapter-nav');
+    if (i > 0) {
+      var p = chapters[i - 1];
+      box.appendChild(UI.el('a', { href: '#/' + p.id }, [
+        UI.el('span.k', { text: '← 이전' }),
+        UI.el('span', { text: p.num + '. ' + p.title })
+      ]));
+    }
+    if (i < chapters.length - 1) {
+      var n = chapters[i + 1];
+      box.appendChild(UI.el('a.next', { href: '#/' + n.id }, [
+        UI.el('span.k', { text: '다음 →' }),
+        UI.el('span', { text: n.num + '. ' + n.title })
+      ]));
+    }
+    return box;
+  }
+
+  // ─────────────────────────────────────────────── 오른쪽 목차
+
+  /* 장 안의 카드 제목(.panel-title)을 긁어서 만든다. 제목이 하나뿐이면 만들지 않는다. */
+  function removeToc() {
+    var old = document.querySelector('.toc');
+    if (old) old.remove();
+  }
+  function buildToc(main) {
+    var heads = main.querySelectorAll('.panel-title');
+    if (heads.length < 2) return;
+    var toc = UI.el('nav.toc', null, [
+      UI.el('div.nav-group', { text: '이 장의 내용', style: { padding: '0 0 .3rem' } })
+    ]);
+    Array.prototype.forEach.call(heads, function (h, i) {
+      if (!h.id) h.id = 'sec-' + i;
+      toc.appendChild(UI.el('a', {
+        href: '#' + h.id, text: h.textContent,
+        onclick: function (e) { e.preventDefault(); h.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      }));
+    });
+    document.body.appendChild(toc);
+  }
+
+  // ─────────────────────────────────────────────── 모바일 서랍
+
+  function closeSidebar() {
+    var sb = document.getElementById('sidebar');
+    if (sb) sb.classList.remove('open');
+    var sc = document.getElementById('scrim');
+    if (sc) sc.hidden = true;
+  }
+  function toggleSidebar() {
+    var sb = document.getElementById('sidebar');
+    var sc = document.getElementById('scrim');
+    if (!sb) return;
+    sb.classList.toggle('open');
+    if (sc) sc.hidden = !sb.classList.contains('open');
   }
 
   // ─────────────────────────────────────────────── 부팅
 
   /* 모듈이 전부 등록된 뒤에 부른다. index.html 의 맨 마지막. */
-  function boot(opts) {
-    opts = opts || {};
+  function boot(o) {
+    opts = o || {};
     if (!window.DF) { fatal('DF 엔진이 없다. df.js 가 app.js 보다 먼저 로드되어야 한다.'); return; }
     if (!window.UI) { fatal('UI 위젯이 없다. ui.js 가 app.js 보다 먼저 로드되어야 한다.'); return; }
     if (!chapters.length) {
@@ -3043,6 +3565,7 @@ img, svg { max-width: 100%; }
     });
 
     applyTheme();
+    migrateOldProgress();
 
     /* 브라우저의 스크롤 복원을 끈다.
      * 해시로 장을 옮기는 앱이라 브라우저가 이전 스크롤 위치를 되살리면
@@ -3052,32 +3575,33 @@ img, svg { max-width: 100%; }
     var root = document.getElementById('lab-root') || document.body;
     UI.clear(root);
 
-    var header = UI.el('header.lab-header');
-    header.appendChild(UI.el('div.lab-brand', { text: opts.title || 'Pandas Lab' }));
-    var tools = UI.el('div.control-row', { style: { margin: '0' } });
-    tools.appendChild(themeButton());
-    if (opts.bookHref) {
-      var a = UI.el('a.btn', { href: opts.bookHref, text: '교재 보기' });
-      tools.appendChild(a);
-    }
-    header.appendChild(tools);
-    root.appendChild(header);
+    var topbar = UI.el('div.topbar', null, [
+      UI.btn('☰', toggleSidebar),
+      UI.el('span.logo', { text: opts.title || 'Pandas Lab' })
+    ]);
 
-    var shell = UI.el('div.lab-shell');
-    shell.appendChild(UI.el('aside', { id: 'lab-nav', class: 'lab-nav' }));
-    shell.appendChild(UI.el('main', { id: 'lab-main', class: 'lab-main' }));
-    root.appendChild(shell);
+    var main = UI.el('main.main', null, [
+      topbar,
+      UI.el('div.main-inner', { id: 'main-inner' })
+    ]);
 
-    if (window.LabData && window.LabData.synthetic) {
-      var main0 = shell.querySelector('#lab-main');
-      main0.appendChild(UI.note(
-        '이 웹앱의 실습 데이터는 원본과 구조만 같은 합성 데이터다(지진 데이터는 USGS 실데이터). ' +
-        '교재의 값과 다를 수 있다.', '알림'
-      ));
-    }
+    root.appendChild(UI.el('div.shell', null, [buildSidebar(), main]));
+    root.appendChild(UI.el('div.scrim', { id: 'scrim', hidden: true, onclick: closeSidebar }));
 
-    window.addEventListener('hashchange', render);
-    render();
+    window.addEventListener('hashchange', route);
+    route();
+  }
+
+  /* 예전 셸은 "다 봤음" 을 직접 눌러 표시했다. 그 기록을 방문 기록으로 옮긴다 —
+   * 옮기지 않으면 학기 중에 쓰던 학생의 진도가 통째로 사라진 것처럼 보인다. */
+  function migrateOldProgress() {
+    if (!state.done || state.migrated) return;
+    Object.keys(state.done).forEach(function (id) {
+      if (state.done[id] && byId[id]) UI.progress.visit(id);
+    });
+    state.migrated = true;
+    delete state.done;
+    save();
   }
 
   function fatal(msg) {
@@ -3241,6 +3765,7 @@ img, svg { max-width: 100%; }
     num: 1,
     title: 'pandas 는 무엇을 해결하는가',
     subtitle: '리스트 → 배열 → DataFrame, 표 데이터가 막히는 지점을 하나씩 넘는다',
+    sim: '리스트 · 배열 · DataFrame 비교기 · Series 해부기',
 
     render: function (root) {
       root.appendChild(UI.note(
@@ -3452,6 +3977,7 @@ img, svg { max-width: 100%; }
     num: 2,
     title: '데이터를 불러오고 첫눈에 파악하기',
     subtitle: 'head · shape · dtypes · info() · describe() · value_counts() 로 파일을 열지 않고 파악한다',
+    sim: '첫인상 대시보드 · describe() 해부 · 범주 확인기',
 
     render: function (root) {
       root.appendChild(simDashboard());
@@ -3807,6 +4333,7 @@ img, svg { max-width: 100%; }
     num: 3,
     title: 'Series — 인덱스를 가진 1차원',
     subtitle: '값과 인덱스가 하나로 붙어 다니는 1차원 자료구조',
+    sim: 'Series 조립기 · 인덱스 불변 실험',
 
     render: function (root) {
       // ───────────────────────────────── 시뮬레이터 ① Series 조립기
@@ -4023,6 +4550,7 @@ img, svg { max-width: 100%; }
     num: 4,
     title: 'DataFrame — 여러 Series 의 집합',
     subtitle: '컬럼을 조립하고, drop 이 실제로 복사본을 반환하는지 확인한다',
+    sim: 'DataFrame 조립기 · drop 은 복사본 · reset_index 함정',
 
     render: function (root) {
       // ───────────────────────────────── 시뮬레이터 ① DataFrame 조립기
@@ -4390,6 +4918,8 @@ img, svg { max-width: 100%; }
     num: 5,
     title: 'loc 와 iloc — 라벨과 위치',
     subtitle: '같은 숫자 2 가 iloc 와 loc 에서 다른 행을 가리키는 이유',
+    sim: '라벨과 위치 나란히 · [] 의 세 가지 의미 · 슬라이스 끝 포함',
+    key: true,   // ★ 학생이 가장 많이 틀리는 개념
 
     render: function (root) {
       var t = LabData.frame('titanic'); // LabData.frame() 은 render 안에서 부른다 (API.md §3)
@@ -4997,6 +5527,8 @@ img, svg { max-width: 100%; }
     num: 6,
     title: '인덱스 정렬 — 연산은 인덱스로 짝짓는다',
     subtitle: 'pandas 는 위치가 아니라 라벨을 보고 값을 짝짓는다. 중복 라벨은 곱집합이 된다',
+    sim: '정렬 짝짓기 실험실 · 중복이 곱집합이 되는 과정 · 브로드캐스팅',
+    key: true,   // ★ 학생이 가장 많이 틀리는 개념
 
     render: function (root) {
       // ───────────────────────────────── 시뮬레이터 ① 정렬 짝짓기 실험실
@@ -5556,6 +6088,8 @@ img, svg { max-width: 100%; }
     num: 7,
     title: '뷰와 복사, Copy-on-Write',
     subtitle: '언제 메모리를 공유하고 언제 복사하는지, 그리고 쓰는 순간 무슨 일이 일어나는지 직접 본다',
+    sim: '슬라이스 vs 마스크 · 쓰는 순간 복사 · 연쇄 할당 함정 3종',
+    key: true,   // ★ 학생이 가장 많이 틀리는 개념
 
     render: function (root) {
       root.appendChild(UI.note(
@@ -5885,6 +6419,7 @@ img, svg { max-width: 100%; }
     num: 8,
     title: '결측 데이터',
     subtitle: '찾고(isna) · 채우고(fillna) · 버리는(dropna) 세 가지 방법, 그리고 문자 하나가 컬럼을 망치는 순간',
+    sim: '결측 지도 · 채우는 방법 비교기 · 한 글자가 컬럼을 망치는 순간',
 
     render: function (root) {
       var t = LabData.frame('titanic');
@@ -6246,6 +6781,7 @@ img, svg { max-width: 100%; }
     num: 9,
     title: '값 바꾸기와 타입 변환',
     subtitle: 'replace · to_numeric · astype 이 dtype 을 어떻게 바꾸는지, 그리고 결측이 조건문을 속이는 법',
+    sim: 'dtype 승격표 · replace 와 dtype · 결측이 조건문을 통과한다',
 
     render: function (root) {
       var t = LabData.frame('titanic');
@@ -6597,6 +7133,7 @@ img, svg { max-width: 100%; }
     num: 10,
     title: '정렬과 집계',
     subtitle: 'sort_values 로 순서를 정하고, count·mean·std·describe·corr 로 수백 행을 숫자 몇 개로 요약한다',
+    sim: '정렬 실험실 · 집계 함수 계산기 · 상관계수에서 멈추는 곳',
 
     render: function (root) {
       root.appendChild(simSort());
@@ -7104,6 +7641,7 @@ img, svg { max-width: 100%; }
     num: 11,
     title: 'groupby — split · apply · combine',
     subtitle: '어떤 행이 어느 묶음에 들어갔는지 실제 행으로 확인하고, 집계를 붙였을 때만 계산이 일어나는 것을 본다',
+    sim: 'split 을 눈으로 · apply 로 접기 · agg 로 컬럼마다 다르게',
 
     render: function (root) {
       root.appendChild(UI.note(
@@ -7629,6 +8167,7 @@ img, svg { max-width: 100%; }
     num: 12,
     title: '표를 합치기 — concat 과 merge',
     subtitle: '같은 모양의 표는 세로로 쌓고(concat), 다른 표는 공통 열(키)로 옆에 잇는다(merge)',
+    sim: 'concat 세로 쌓기 · merge how 네 가지 · 키 매칭 들여다보기',
 
     render: function (root) {
       root.appendChild(simConcat());
@@ -8425,6 +8964,7 @@ img, svg { max-width: 100%; }
     num: 13,
     title: '노트북이 거짓말할 때 — 실행 순서와 상태',
     subtitle: '노트북의 출력은 지금 보이는 코드가 아니라 실행 이력의 결과라는 것을 셀을 직접 눌러 확인한다',
+    sim: '실행 카운트 읽기 · 유령 컬럼 · 가짜 노트북',
 
     render: function (root) {
       root.appendChild(UI.note(
@@ -8623,6 +9163,7 @@ img, svg { max-width: 100%; }
     num: 14,
     title: '종합 실습 — 지진 데이터부터 머신러닝까지',
     subtitle: '13개 장의 도구를 지진 데이터로 모아 쓰고, 모델에 넣기 전 결측·dtype·데이터 누수를 확인한다',
+    sim: '지진 탐색 대시보드 · 규모 분포와 산점도 · 모델 전 점검 세 가지',
 
     render: function (root) {
       root.appendChild(simDashboard());

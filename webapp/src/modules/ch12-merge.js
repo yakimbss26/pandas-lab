@@ -47,6 +47,7 @@
     num: 12,
     title: '표를 합치기 — concat 과 merge',
     subtitle: '같은 모양의 표는 세로로 쌓고(concat), 다른 표는 공통 열(키)로 옆에 잇는다(merge)',
+    sim: 'concat 세로 쌓기 · merge how 네 가지 · 키 매칭 들여다보기',
 
     render: function (root) {
       root.appendChild(simConcat());

@@ -18,6 +18,7 @@
     num: 2,
     title: '데이터를 불러오고 첫눈에 파악하기',
     subtitle: 'head · shape · dtypes · info() · describe() · value_counts() 로 파일을 열지 않고 파악한다',
+    sim: '첫인상 대시보드 · describe() 해부 · 범주 확인기',
 
     render: function (root) {
       root.appendChild(simDashboard());

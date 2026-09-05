@@ -31,6 +31,7 @@
     num: 4,
     title: 'DataFrame — 여러 Series 의 집합',
     subtitle: '컬럼을 조립하고, drop 이 실제로 복사본을 반환하는지 확인한다',
+    sim: 'DataFrame 조립기 · drop 은 복사본 · reset_index 함정',
 
     render: function (root) {
       // ───────────────────────────────── 시뮬레이터 ① DataFrame 조립기

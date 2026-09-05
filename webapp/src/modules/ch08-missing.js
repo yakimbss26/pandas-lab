@@ -32,6 +32,7 @@
     num: 8,
     title: '결측 데이터',
     subtitle: '찾고(isna) · 채우고(fillna) · 버리는(dropna) 세 가지 방법, 그리고 문자 하나가 컬럼을 망치는 순간',
+    sim: '결측 지도 · 채우는 방법 비교기 · 한 글자가 컬럼을 망치는 순간',
 
     render: function (root) {
       var t = LabData.frame('titanic');

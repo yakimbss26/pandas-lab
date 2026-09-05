@@ -32,6 +32,15 @@ var DATA_JS = path.join(SRC, 'core', 'data.js');
 var CORE_ORDER = ['core/df.js', 'core/ui.js', 'core/data.js', 'core/app.js'];
 var CSS_ORDER = ['theme.css', 'app.css'];
 
+/* 문서 머리. NumPy Lab 과 같은 형식이다 — 탭 아이콘이 두 사이트를 한 벌로 묶는다.
+ * 파랑은 theme.css 의 --c-original(#2a78d6) 과 같은 값이어야 한다. */
+var PAGE_TITLE = 'Pandas Lab — 과학고 pandas 심화 학습';
+var PAGE_DESC = '브라우저에서 도는 미니 DataFrame 엔진과 시뮬레이터로 배우는 pandas 심화 학습 실습장.';
+var FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'" +
+  "%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Ctext x='16' y='22' " +
+  "font-family='monospace' font-size='15' font-weight='bold' fill='white' " +
+  "text-anchor='middle'%3Epd%3C/text%3E%3C/svg%3E";
+
 // ─────────────────────────────────────────────── CSV 읽기
 
 /* 따옴표로 감싼 필드를 처리한다(타이타닉 Name 에 쉼표가 들어 있다). */
@@ -383,10 +392,14 @@ function buildIndex(mods) {
     '<head>',
     '  <meta charset="utf-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1">',
-    '  <title>Pandas Lab</title>',
+    '  <meta name="color-scheme" content="light dark">',
+    '  <title>' + PAGE_TITLE + '</title>',
+    '  <meta name="description" content="' + PAGE_DESC + '">',
+    '  <link rel="icon" href="' + FAVICON + '">',
     links,
     '</head>',
     '<body>',
+    '  <noscript><p style="padding:2rem;font:15px system-ui,sans-serif">이 실습장은 자바스크립트가 필요하다. 브라우저에서 자바스크립트를 켜라.</p></noscript>',
     '  <div id="lab-root"></div>',
     '  <!-- 로드 순서: df -> ui -> data -> app -> modules -> boot.',
     '       app.js 가 modules 보다 나중에 오면 장이 하나도 등록되지 않는다. -->',
@@ -421,12 +434,16 @@ function buildSingle(mods) {
     '<head>',
     '  <meta charset="utf-8">',
     '  <meta name="viewport" content="width=device-width, initial-scale=1">',
-    '  <title>Pandas Lab (단일 파일)</title>',
+    '  <meta name="color-scheme" content="light dark">',
+    '  <title>' + PAGE_TITLE + ' (단일 파일)</title>',
+    '  <meta name="description" content="' + PAGE_DESC + '">',
+    '  <link rel="icon" href="' + FAVICON + '">',
     '  <style>',
     css,
     '  </style>',
     '</head>',
     '<body>',
+    '  <noscript><p style="padding:2rem;font:15px system-ui,sans-serif">이 실습장은 자바스크립트가 필요하다. 브라우저에서 자바스크립트를 켜라.</p></noscript>',
     '  <div id="lab-root"></div>',
     '  <script>',
     js,

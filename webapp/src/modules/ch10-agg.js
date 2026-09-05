@@ -42,6 +42,7 @@
     num: 10,
     title: '정렬과 집계',
     subtitle: 'sort_values 로 순서를 정하고, count·mean·std·describe·corr 로 수백 행을 숫자 몇 개로 요약한다',
+    sim: '정렬 실험실 · 집계 함수 계산기 · 상관계수에서 멈추는 곳',
 
     render: function (root) {
       root.appendChild(simSort());

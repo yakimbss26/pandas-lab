@@ -29,6 +29,7 @@
     num: 3,
     title: 'Series — 인덱스를 가진 1차원',
     subtitle: '값과 인덱스가 하나로 붙어 다니는 1차원 자료구조',
+    sim: 'Series 조립기 · 인덱스 불변 실험',
 
     render: function (root) {
       // ───────────────────────────────── 시뮬레이터 ① Series 조립기

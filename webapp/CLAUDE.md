@@ -36,6 +36,10 @@ webapp/
 5. **표 위젯의 HTML escape 는 열(`cols`) 속성이다.** `raw: true` 를 행에 붙이면 `<b>` 가 글자로 보인다.
 6. **빌드는 원본이 없으면 기존 `data.js` 를 보존한다.** `buildData()` 가 `null` 을 반환하면
    "기존 파일 유지" 를 뜻한다. 그러지 않으면 저장소를 클론한 사람이 빌드하는 순간 데이터가 전부 날아간다.
+7. **디자인은 NumPy Lab 과 한 벌이다.** https://yakimbss26.github.io/numpy-lab/ 과
+   표면·잉크·형태 토큰이 같고 셸(사이드바·홈 화면·이전/다음·오른쪽 목차·모바일 서랍)도 같다.
+   학생이 한 학기에 두 사이트를 함께 쓰므로 **같은 자리를 눌러야 한다.**
+   토큰이나 셸 구조를 바꿀 일이 생기면 `C:\numpy` 를 함께 고친다. 자세한 것은 아래 "디자인 통일".
 
 ## 데이터 정책
 
@@ -63,3 +67,28 @@ webapp/
 계열이 4개 이상 필요하면 색을 추가하지 말고 "그 외" 로 접거나 차트를 나눈다.
 
 차트를 만들기 전에 `dataviz` 스킬을 로드하고, 팔레트를 건드렸다면 `validate_palette.js` 를 다시 돌린다.
+
+## 디자인 통일 — NumPy Lab 과 한 벌
+
+두 사이트를 한 학기에 함께 쓴다. **같은 것은 같아 보여야 하고 같은 자리에 있어야 한다.**
+
+| 무엇 | 어디에 |
+|:---|:---|
+| 표면·잉크·형태·그림자 값 | `src/theme.css` `:root` — NumPy Lab 과 같은 값 |
+| 셸 배치(사이드바 268px · 본문 900px · 모바일 서랍 900px) | `src/app.css` — NumPy Lab 에서 그대로 가져왔다 |
+| 셸 동작(홈 타일 · 진도 점 · 이전/다음 · 오른쪽 목차) | `src/core/app.js` |
+| 탭 아이콘(파란 사각형 + 모노 글자)·제목·설명 | `build.js` 의 `FAVICON` / `PAGE_TITLE` / `PAGE_DESC` |
+
+역할 토큰(`--c-original` 등)이 이 프로젝트의 이름이고, NumPy Lab 에서 가져온 CSS 가 쓰는
+`--s1` `--surface` `--ink` 같은 이름은 **theme.css 의 `:root` 안에서 별칭으로 묶여 있다.**
+`var()` 는 쓰는 시점에 풀리므로 별칭을 한 번만 선언하면 다크 재선언을 그대로 따라간다.
+**새 이름을 만들지 말고 그 표를 통해 가리켜라.**
+
+- 셸 클래스: `.shell .sidebar .brand .nav .nav-group .side-foot .prog-bar .main .main-inner
+  .crumb .chapter-nav .topbar .scrim .toc .hero .tiles .tile`
+- 본문 유틸: `.h-chapter .h-sec .h-sub .lede .muted .small .nowrap`
+- 위젯: `.card .panel-title .note(.note--why/tip/ver/danger) .seg .btn .quiz .q-choice
+  .control-row .tbl .chip .viz`
+
+`.control-row` 는 **컨트롤이 둘 이상이면** `:has()` 로 회색 판이 된다(NumPy Lab 의 `.controls`).
+하나뿐이면 판이 되지 않는다 — 버튼 하나가 상자에 담기면 과장돼 보인다.

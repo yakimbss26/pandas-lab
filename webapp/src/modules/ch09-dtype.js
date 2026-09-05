@@ -42,6 +42,7 @@
     num: 9,
     title: '값 바꾸기와 타입 변환',
     subtitle: 'replace · to_numeric · astype 이 dtype 을 어떻게 바꾸는지, 그리고 결측이 조건문을 속이는 법',
+    sim: 'dtype 승격표 · replace 와 dtype · 결측이 조건문을 통과한다',
 
     render: function (root) {
       var t = LabData.frame('titanic');

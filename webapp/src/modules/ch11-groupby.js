@@ -38,6 +38,7 @@
     num: 11,
     title: 'groupby — split · apply · combine',
     subtitle: '어떤 행이 어느 묶음에 들어갔는지 실제 행으로 확인하고, 집계를 붙였을 때만 계산이 일어나는 것을 본다',
+    sim: 'split 을 눈으로 · apply 로 접기 · agg 로 컬럼마다 다르게',
 
     render: function (root) {
       root.appendChild(UI.note(

@@ -146,6 +146,8 @@
     num: 7,
     title: '뷰와 복사, Copy-on-Write',
     subtitle: '언제 메모리를 공유하고 언제 복사하는지, 그리고 쓰는 순간 무슨 일이 일어나는지 직접 본다',
+    sim: '슬라이스 vs 마스크 · 쓰는 순간 복사 · 연쇄 할당 함정 3종',
+    key: true,   // ★ 학생이 가장 많이 틀리는 개념
 
     render: function (root) {
       root.appendChild(UI.note(

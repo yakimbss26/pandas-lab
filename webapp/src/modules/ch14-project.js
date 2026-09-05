@@ -51,6 +51,7 @@
     num: 14,
     title: '종합 실습 — 지진 데이터부터 머신러닝까지',
     subtitle: '13개 장의 도구를 지진 데이터로 모아 쓰고, 모델에 넣기 전 결측·dtype·데이터 누수를 확인한다',
+    sim: '지진 탐색 대시보드 · 규모 분포와 산점도 · 모델 전 점검 세 가지',
 
     render: function (root) {
       root.appendChild(simDashboard());

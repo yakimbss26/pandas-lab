@@ -698,28 +698,137 @@
     return box;
   }
 
+  // ─────────────────────────────────────────────── 세그먼트 컨트롤
+
+  /* seg({value, options:[{value,label}], onChange}) — 테마 전환처럼 값이 하나인 선택.
+   * 눌린 칸만 떠오른다. NumPy Lab 과 같은 위젯이다. */
+  function seg(opts) {
+    var cur = opts.value;
+    var btns = (opts.options || []).map(function (op) {
+      var val = typeof op === 'string' ? op : op.value;
+      var lab = typeof op === 'string' ? op : op.label;
+      return el('button', {
+        type: 'button', text: lab,
+        'aria-pressed': String(val) === String(cur) ? 'true' : 'false',
+        onclick: function () { set(val); if (opts.onChange) opts.onChange(val); }
+      });
+    });
+    var box = el('div.seg', { role: 'group', 'aria-label': opts.label || null }, btns);
+    function set(val) {
+      cur = val;
+      btns.forEach(function (b, i) {
+        var op = opts.options[i];
+        var v = typeof op === 'string' ? op : op.value;
+        b.setAttribute('aria-pressed', String(v) === String(val) ? 'true' : 'false');
+      });
+    }
+    box.setValue = set;
+    return box;
+  }
+
+  function btn(label, onClick, opts) {
+    opts = opts || {};
+    return el('button' + (opts.primary ? '.btn.primary' : '.btn'), {
+      type: 'button', text: label, onclick: onClick
+    });
+  }
+
+  // ─────────────────────────────────────────────── 진도
+
+  /* 방문한 장과 맞힌 문제를 이 브라우저에만 저장한다.
+   * 사이드바의 점(회색=방문, 초록=문제 전부 정답)과 진도 막대가 이걸 읽는다. */
+  var PROG_KEY = 'pandas-lab/progress-v1';
+  var progListeners = [];
+  var quizSeq = {};
+
+  var progress = {
+    chapter: null,           // 지금 화면에 그려지는 장. app.js 가 세운다
+    load: function () {
+      try { return JSON.parse(localStorage.getItem(PROG_KEY) || '{}'); } catch (e) { return {}; }
+    },
+    save: function (d) { try { localStorage.setItem(PROG_KEY, JSON.stringify(d)); } catch (e) { /* 저장소가 막혀도 앱은 돈다 */ } },
+    mark: function (k, ok) { var d = this.load(); d[k] = !!ok; this.save(d); emitProgress(); },
+    visit: function (id) { var d = this.load(); d['visit:' + id] = true; this.save(d); emitProgress(); },
+    /* total 은 **그 장에 있는 문제 수**다. 답한 문제 수가 아니다 —
+     * 답한 것만 세면 한 문제만 맞혀도 "다 맞혔다" 로 보여 점이 거짓말을 한다. */
+    stats: function (id) {
+      var d = this.load(), answered = 0, ok = 0;
+      for (var k in d) if (k.indexOf(id + ':q') === 0) { answered++; if (d[k]) ok++; }
+      var tot = d['count:' + id];
+      if (typeof tot !== 'number') tot = answered;      // 아직 그려 본 적이 없는 장
+      return { total: tot, answered: answered, correct: ok, visited: !!d['visit:' + id] };
+    },
+    reset: function () { this.save({}); emitProgress(); },
+    /* 장을 그리기 직전에 부른다. 그 장의 문제 번호를 0 부터 다시 매긴다 —
+     * 번호가 렌더마다 밀리면 다시 방문했을 때 다른 문제로 기록된다. */
+    beginChapter: function (id) { this.chapter = id || null; if (id) quizSeq[id] = 0; },
+    /* 렌더가 끝난 뒤에 부른다. 그 장에 문제가 몇 개인지 확정해 저장한다. */
+    endChapter: function (id) {
+      if (!id || !quizSeq[id]) return;
+      var d = this.load();
+      if (d['count:' + id] === quizSeq[id]) return;
+      d['count:' + id] = quizSeq[id];
+      this.save(d);
+      emitProgress();
+    },
+    onChange: function (f) { progListeners.push(f); }
+  };
+  function emitProgress() { progListeners.forEach(function (f) { f(); }); }
+
   // ─────────────────────────────────────────────── 확인 문제
 
+  /* quiz({title, question, choices:[{label, correct, why}], explain})
+   * 보기는 줄로 쌓이고 A·B·C 표식이 앞에 온다. 누르면 정답 자리가 함께 드러난다.
+   * 색만으로 말하지 않는다 — 표식 글자와 테두리가 같이 바뀐다. */
   function quiz(spec) {
-    var box = el('div.card');
-    box.appendChild(el('div.panel-title', { text: spec.title || '확인 문제' }));
-    box.appendChild(el('p', { text: spec.question }));
-    var result = el('div.note', { style: { display: 'none' } });
-    (spec.choices || []).forEach(function (c, i) {
-      var b = el('button', { text: c.label, style: { marginRight: '8px', marginBottom: '8px' } });
-      b.addEventListener('click', function () {
-        result.style.display = '';
-        clear(result);
-        var right = !!c.correct;
-        result.classList.toggle('note--danger', !right);
-        result.appendChild(el('span.note-label', {
-          text: right ? '✓ 맞다. ' : '✗ 아니다. '
-        }));
-        result.appendChild(document.createTextNode(c.why || spec.explain || ''));
-      });
-      box.appendChild(b);
+    var box = el('div.card.quiz');
+    if (spec.title !== null) box.appendChild(el('div.panel-title', { text: spec.title || '확인 문제' }));
+
+    /* 장 안에서 만들어진 순서가 곧 문제 번호다. beginChapter 가 0 으로 되돌린다. */
+    var key = null, idx = 0;
+    if (progress.chapter) {
+      var ch = progress.chapter;
+      if (quizSeq[ch] === undefined) quizSeq[ch] = 0;
+      idx = quizSeq[ch]++;
+      key = ch + ':q' + idx;
+    }
+    /* Q 번호는 **장 전체에서** 이어진다. 카드마다 셈을 새로 시작하면 전부 Q1 이 된다. */
+    box.style.counterReset = 'qn ' + idx;
+
+    var explain = el('div.q-explain', { hidden: true });
+    var choices = spec.choices || [];
+    var answered = false;
+
+    var choiceEls = choices.map(function (c, ci) {
+      return el('button.q-choice', {
+        type: 'button',
+        onclick: function () {
+          var right = !!c.correct;
+          choiceEls.forEach(function (e, i) {
+            e.setAttribute('data-state', choices[i].correct ? 'right' : (i === ci ? 'wrong' : ''));
+          });
+          clear(explain);
+          explain.appendChild(el('b', { text: right ? '✓ 맞다. ' : '✗ 아니다. ' }));
+          explain.appendChild(document.createTextNode(c.why || spec.explain || ''));
+          explain.hidden = false;
+          // 첫 번째 답만 기록한다. 그리고 살아 있는 본문 안에서 눌렀을 때만 —
+          // 검사 하네스는 떨어진 노드에 렌더하므로 진도를 더럽히지 않는다.
+          if (key && !answered && box.closest && box.closest('#main-inner')) {
+            answered = true;
+            progress.mark(key, right);
+          }
+        }
+      }, [
+        el('span.mk', { text: 'ABCDE'[ci] || String(ci + 1) }),
+        el('span', { text: c.label })
+      ]);
     });
-    box.appendChild(result);
+
+    box.appendChild(el('div.q', null, [
+      el('div.q-stem', { text: spec.question }),
+      el('div.q-choices', null, choiceEls),
+      explain
+    ]));
     return box;
   }
 
@@ -738,12 +847,12 @@
     bar: bar, hist: hist, scatter: scatter, legend: legend, withTableTwin: withTableTwin,
     niceTicks: niceTicks, scale: scale,
     // 컨트롤
-    slider: slider, buttonGroup: buttonGroup, toggle: toggle,
+    slider: slider, buttonGroup: buttonGroup, toggle: toggle, seg: seg, btn: btn,
     // 텍스트
     code: code, note: note, danger: danger,
     copyToClipboard: copyToClipboard, PREAMBLE: PREAMBLE,
-    // 단계·문제
-    stepper: stepper, quiz: quiz
+    // 단계·문제·진도
+    stepper: stepper, quiz: quiz, progress: progress
   };
 
   if (typeof window !== 'undefined') window.UI = UI;

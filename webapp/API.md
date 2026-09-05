@@ -91,6 +91,19 @@ render: function (root) {
 - **값·라벨 텍스트에 계열색을 입히지 마라.** 잉크 토큰(`--ink-1`, `--ink-2`)만 쓴다.
 - 색 옆에는 항상 글자가 온다. 색 단독으로 의미를 전달하지 않는다.
 
+> **★ 이 앱의 생김새는 NumPy Lab 과 한 벌이다.**
+> https://yakimbss26.github.io/numpy-lab/ 과 표면·잉크·형태 값이 같고, 셸(사이드바·홈 화면·
+> 이전/다음·오른쪽 목차)도 같다. 학생이 두 사이트를 한 학기에 함께 쓰므로 **같은 자리를 눌러야
+> 한다.** 새 토큰이나 새 셸 구조를 만들지 마라. 아래 별칭으로 이미 양쪽 이름이 통해 있다.
+>
+> | 이 프로젝트 | NumPy Lab 에서 온 이름 |
+> |:---|:---|
+> | `--c-original` `--c-copy` `--c-result` | `--s1` `--s2` `--s3` |
+> | `--ink-1` `--surface-1` `--surface-page` | `--ink` `--surface` `--page` |
+> | `--surface-sunken` `--grid` | `--surface-2` `--grid-line` |
+>
+> 값을 바꾸려면 **양쪽 저장소를 같이 고치고** 팔레트 검증기를 다시 돌린다.
+
 ### ④ 완료 조건 — 보고하기 전에 직접 확인한다
 
 ```bash
@@ -110,11 +123,22 @@ npm run build
 
 | 호출 | 의미 |
 |:---|:---|
-| `Lab.register({id, num, title, subtitle, render})` | 자기를 등록한다. **로드 시점에 즉시 부른다** |
+| `Lab.register({id, num, title, subtitle, sim, key, render})` | 자기를 등록한다. **로드 시점에 즉시 부른다** |
 | `Lab.go(id)` | 다른 장으로 이동 |
 | `Lab.chapters()` | 등록된 장 목록 |
 
 `register` 는 `id` 와 `render` 가 필수다. 같은 `id` 를 두 번 등록하면 두 번째는 무시되고 경고가 난다.
+
+| 필드 | 어디에 쓰이는가 |
+|:---|:---|
+| `num` | 사이드바 번호, 빵부스러기(`11장`), 문서 제목 |
+| `title` | 사이드바·장 제목·이전/다음 |
+| `subtitle` | 장 머리의 한 줄 소개(`.lede`)와 **홈 타일 설명** |
+| `sim` | 홈 타일의 `▸ …` 줄. 그 장에 든 시뮬레이터를 `·` 로 이어 적는다. **없는 것을 적지 마라** |
+| `key` | `true` 면 홈 타일에 링 + `★ 가장 많이 틀리는 개념`. 5·6·7장만 |
+
+`sim` 문구는 장 안의 `.panel-title` 을 줄인 것이다. 시뮬레이터를 더하거나 빼면 여기도 고친다 —
+홈 화면이 없는 시뮬레이터를 광고하면 학생이 찾다가 지친다.
 
 > **★ 로드 순서**: `df → ui → data → app → modules → boot`.
 > `app.js` 가 `window.Lab` 을 정의한다. 모듈이 먼저 로드되면 **조용히 `Lab is not defined` 로 죽어
@@ -385,9 +409,14 @@ UI.scale([d0, d1], [r0, r1])
 UI.slider({ label, min, max, step, value, onChange: function (v) {…} })
 UI.buttonGroup([{ label, value }, …], { label, selected: 0, onChange: function (v, i) {…} })
 UI.toggle({ label, value, onChange: function (on) {…} })
+UI.seg({ label, value, options: [{ value, label }, …], onChange: function (v) {…} })
+UI.btn('라벨', onClick, { primary: true })
 ```
 
 `onChange` 안에서 `rebuild()` 를 불러 화면을 다시 그린다(§1 ②).
+
+컨트롤은 `UI.el('div.control-row')` 에 담아라. **둘 이상 들어 있으면 자동으로 한 판(회색 상자)이
+된다** — 하나뿐이면 상자가 되지 않는다. 셸이 쓰는 세그먼트(테마 전환)와 같은 모양이다.
 
 ### 5.6 텍스트
 
@@ -420,6 +449,7 @@ UI.code("t.loc[t['Age'] > 60, 'Age'] = 0", { dataset: 'titanic' });
 UI.stepper(steps, function (step, i) { return UI.note(step.kind); }, { title })
 
 UI.quiz({
+  title: '확인 문제',      // 생략 가능. null 이면 제목을 달지 않는다
   question: '…',
   choices: [{ label: 'A', correct: true, why: '…' }, { label: 'B', why: '…' }],
   explain: '공통 해설'
@@ -427,6 +457,20 @@ UI.quiz({
 ```
 
 장마다 **확인 문제 2~4개, 시뮬레이터 최소 2개.**
+
+보기는 `A · B · C` 표식을 단 줄로 쌓인다. 누르면 **정답 자리가 함께 드러나고** 해설이 열린다.
+정답·오답은 색만으로 말하지 않는다 — 표식 글자와 테두리가 같이 바뀐다.
+
+**진도**: `render` 안에서 만들어진 순서가 곧 문제 번호다(`ch07-copy:q0`, `q1`, …).
+문제를 중간에 끼워 넣으면 뒤 번호가 밀려 학생의 기록이 다른 문제로 옮겨 간다.
+**문제는 뒤에 더해라.** 첫 번째로 누른 답만 기록된다.
+
+```js
+UI.progress.stats(id)   // {total, answered, correct, visited} — total 은 그 장의 문제 수
+UI.progress.reset()     // 사이드바의 "진도 초기화" 가 부른다
+```
+
+셸이 알아서 부르므로 모듈이 `beginChapter`/`endChapter`/`visit` 를 직접 부를 일은 없다.
 
 ---
 

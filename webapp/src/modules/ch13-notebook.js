@@ -372,6 +372,7 @@
     num: 13,
     title: '노트북이 거짓말할 때 — 실행 순서와 상태',
     subtitle: '노트북의 출력은 지금 보이는 코드가 아니라 실행 이력의 결과라는 것을 셀을 직접 눌러 확인한다',
+    sim: '실행 카운트 읽기 · 유령 컬럼 · 가짜 노트북',
 
     render: function (root) {
       root.appendChild(UI.note(

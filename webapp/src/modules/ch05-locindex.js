@@ -55,6 +55,8 @@
     num: 5,
     title: 'loc 와 iloc — 라벨과 위치',
     subtitle: '같은 숫자 2 가 iloc 와 loc 에서 다른 행을 가리키는 이유',
+    sim: '라벨과 위치 나란히 · [] 의 세 가지 의미 · 슬라이스 끝 포함',
+    key: true,   // ★ 학생이 가장 많이 틀리는 개념
 
     render: function (root) {
       var t = LabData.frame('titanic'); // LabData.frame() 은 render 안에서 부른다 (API.md §3)

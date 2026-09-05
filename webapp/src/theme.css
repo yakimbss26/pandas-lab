@@ -15,17 +15,21 @@
 :root {
   color-scheme: light;
 
-  /* ── 표면·잉크 (검증기의 surface 인자와 같은 값이어야 한다) */
+  /* ── 표면·잉크 (검증기의 surface 인자와 같은 값이어야 한다)
+   * 값은 NumPy Lab(https://yakimbss26.github.io/numpy-lab/)과 같다. 두 사이트는
+   * 한 벌의 디자인이어야 하므로 표면·잉크·형태 값을 한쪽에서만 바꾸지 않는다. */
   --surface-1: #fcfcfb;          /* 차트 표면 */
   --surface-page: #f9f9f7;       /* 페이지 평면 */
-  --surface-raised: #ffffff;     /* 카드 */
-  --surface-sunken: #f2f1ed;     /* 코드·입력 */
+  --surface-raised: #fcfcfb;     /* 카드·사이드바 */
+  --surface-sunken: #f2f2ee;     /* 코드·입력·콜아웃 */
+  --surface-3: #e9e9e3;          /* 한 단 더 눌린 면 (세그먼트 트랙) */
   --ink-1: #0b0b0b;              /* 본문 */
   --ink-2: #52514e;              /* 보조 */
   --ink-muted: #898781;          /* 축·라벨 */
   --grid: #e1e0d9;              /* 격자선 (헤어라인) */
   --axis: #c3c2b7;              /* 기준선·축 */
   --border: rgba(11, 11, 11, 0.10);
+  --border-2: rgba(11, 11, 11, 0.18);   /* 입력·버튼 테두리 */
 
   /* ── 역할색 (전 장 고정) */
   --c-original: #2a78d6;
@@ -35,6 +39,14 @@
   --c-warning: #fab219;
   --c-good: #0ca30c;
   --c-na: #898781;
+  --success-text: #006300;       /* 초록 글자는 본문 대비를 위해 한 단 어둡게 */
+
+  /* 역할색의 옅은 배경 (칸 채우기·뱃지). 색 단독으로 말하지 않게 라벨과 함께 쓴다 */
+  --c-original-wash: rgba(42, 120, 214, 0.14);
+  --c-copy-wash: rgba(235, 104, 52, 0.14);
+  --c-result-wash: rgba(27, 175, 122, 0.16);
+  --c-danger-wash: rgba(208, 59, 59, 0.14);
+  --c-good-wash: rgba(12, 163, 12, 0.12);
 
   /* 강조는 색이 아니라 링이다 */
   --c-focus-ring: var(--ink-1);
@@ -59,13 +71,13 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
   --fs-xs: 0.75rem;
-  --fs-sm: 0.8125rem;
-  --fs-base: 0.9375rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 15.5px;             /* NumPy Lab 본문과 같은 크기 */
   --fs-lg: 1.125rem;
   --fs-xl: 1.5rem;
   --fs-hero: 2.5rem;
-  --lh-tight: 1.25;
-  --lh-base: 1.7;
+  --lh-tight: 1.35;
+  --lh-base: 1.72;
 
   /* ── 간격·형태 */
   --sp-1: 4px;
@@ -75,16 +87,39 @@
   --sp-5: 24px;
   --sp-6: 32px;
   --sp-7: 48px;
-  --radius-sm: 4px;              /* 데이터 끝단 라운딩과 같은 값 */
-  --radius: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;             /* 카드 */
+  --radius-mark: 4px;            /* 데이터 끝단 라운딩. UI 형태와 따로 간다 */
   --mark-gap: 2px;               /* 채움 사이 표면 간격 */
   --stroke-line: 2px;            /* 선 굵기 */
   --marker-min: 8px;             /* 마커 최소 크기 */
 
   --shadow-1: 0 1px 2px rgba(11, 11, 11, 0.06);
   --shadow-2: 0 4px 12px rgba(11, 11, 11, 0.08);
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 14px rgba(11, 11, 11, 0.05);
   --dur: 180ms;
+
+  /* ── 별칭 — 셸(app.css)과 NumPy Lab 에서 가져온 위젯 CSS 가 쓰는 이름.
+   * var() 는 쓰는 시점에 풀리므로 여기 한 번만 선언하면 다크 재선언을 그대로 따라간다.
+   * 새 이름을 만들지 말고 이 표를 통해 역할 토큰을 가리켜라. */
+  --page:      var(--surface-page);
+  --surface:   var(--surface-1);
+  --surface-2: var(--surface-sunken);
+  --ink:       var(--ink-1);
+  --grid-line: var(--grid);
+  --font:      var(--font-sans);
+  --mono:      var(--font-mono);
+  --s1:        var(--c-original);
+  --s2:        var(--c-copy);
+  --s3:        var(--c-result);
+  --s1-wash:   var(--c-original-wash);
+  --s2-wash:   var(--c-copy-wash);
+  --s3-wash:   var(--c-result-wash);
+  --crit-wash: var(--c-danger-wash);
+  --good:      var(--c-good);
+  --warning:   var(--c-warning);
+  --critical:  var(--c-danger);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -92,14 +127,16 @@
     color-scheme: dark;
     --surface-1: #1a1a19;
     --surface-page: #0d0d0d;
-    --surface-raised: #212120;
-    --surface-sunken: #141413;
+    --surface-raised: #1a1a19;
+    --surface-sunken: #232322;
+    --surface-3: #2c2c2a;
     --ink-1: #ffffff;
     --ink-2: #c3c2b7;
     --ink-muted: #898781;
     --grid: #2c2c2a;
     --axis: #383835;
     --border: rgba(255, 255, 255, 0.10);
+    --border-2: rgba(255, 255, 255, 0.18);
 
     --c-original: #3987e5;
     --c-copy: #d95926;
@@ -109,6 +146,13 @@
     --c-good: #0ca30c;
     --c-na: #898781;
     --c-focus-ring: var(--ink-1);
+    --success-text: #0ca30c;
+
+    --c-original-wash: rgba(57, 135, 229, 0.22);
+    --c-copy-wash: rgba(217, 89, 38, 0.22);
+    --c-result-wash: rgba(25, 158, 112, 0.24);
+    --c-danger-wash: rgba(208, 59, 59, 0.22);
+    --c-good-wash: rgba(12, 163, 12, 0.16);
 
     /* 다크에서는 3색 모두 3:1 이상이라 relief 가 필요 없다 */
     --relief-required: 0;
@@ -116,6 +160,7 @@
     --seq-ordinal-min: #184f95;   /* 다크에서는 600 보다 어둡게 가지 않는다 */
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -123,14 +168,16 @@
   color-scheme: dark;
   --surface-1: #1a1a19;
   --surface-page: #0d0d0d;
-  --surface-raised: #212120;
-  --surface-sunken: #141413;
+  --surface-raised: #1a1a19;
+  --surface-sunken: #232322;
+  --surface-3: #2c2c2a;
   --ink-1: #ffffff;
   --ink-2: #c3c2b7;
   --ink-muted: #898781;
   --grid: #2c2c2a;
   --axis: #383835;
   --border: rgba(255, 255, 255, 0.10);
+  --border-2: rgba(255, 255, 255, 0.18);
 
   --c-original: #3987e5;
   --c-copy: #d95926;
@@ -140,10 +187,17 @@
   --c-good: #0ca30c;
   --c-na: #898781;
   --c-focus-ring: var(--ink-1);
+  --success-text: #0ca30c;
+  --c-original-wash: rgba(57, 135, 229, 0.22);
+  --c-copy-wash: rgba(217, 89, 38, 0.22);
+  --c-result-wash: rgba(25, 158, 112, 0.24);
+  --c-danger-wash: rgba(208, 59, 59, 0.22);
+  --c-good-wash: rgba(12, 163, 12, 0.16);
   --relief-required: 0;
   --seq-ordinal-min: #184f95;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
 /* ─────────────────────────────────────────────── 기본 */
@@ -160,18 +214,35 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 { line-height: var(--lh-tight); margin: 0 0 var(--sp-3); font-weight: 650; }
+h1, h2, h3, h4 {
+  line-height: var(--lh-tight); margin: 0 0 var(--sp-3);
+  font-weight: 650; letter-spacing: -0.01em;
+}
 h1 { font-size: var(--fs-xl); }
 h2 { font-size: var(--fs-lg); }
 h3 { font-size: var(--fs-base); }
 p { margin: 0 0 var(--sp-4); }
-a { color: var(--c-original); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a { color: var(--c-original); text-decoration: none; text-underline-offset: 2px; }
+a:hover { text-decoration: underline; }
+button { font-family: inherit; font-size: inherit; }
+
+/* 본문 리듬용 유틸 — NumPy Lab 과 같은 이름·같은 값 */
+.h-chapter { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.15rem); margin: 0 0 .2em; }
+.h-sec  { font-size: 1.32rem; margin: 2.6em 0 .7em; }
+.h-sub  { font-size: 1.06rem; margin: 1.9em 0 .5em; color: var(--ink-1); }
+.lede   { color: var(--ink-2); font-size: 1.03rem; margin-bottom: 1.6em; }
+.muted  { color: var(--ink-muted); }
+.small  { font-size: .875rem; }
+.nowrap { white-space: nowrap; }
 
 code, pre, .mono { font-family: var(--font-mono); font-size: var(--fs-sm); }
-code {
+code:not(pre code) {
+  font-size: .89em;
   background: var(--surface-sunken);
-  padding: 1px var(--sp-1);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-mark);
+  padding: .08em .38em;
+  white-space: nowrap;
 }
 pre {
   background: var(--surface-sunken);
@@ -184,9 +255,11 @@ pre {
 }
 pre code { background: none; padding: 0; }
 
+/* 키보드 포커스 링은 데이터 강조(.is-focus)와 다른 것이다 — 그쪽은 잉크 링을 쓴다 */
 :focus-visible {
-  outline: var(--focus-ring-width) solid var(--c-focus-ring);
+  outline: var(--focus-ring-width) solid var(--s1);
   outline-offset: 2px;
+  border-radius: var(--radius-mark);
 }
 
 /* ─────────────────────────────────────────────── 조각 */
@@ -195,14 +268,17 @@ pre code { background: none; padding: 0; }
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--sp-5);
-  margin: 0 0 var(--sp-5);
+  padding: 1.15rem 1.3rem 1.3rem;
+  margin: 1.5em 0;
+  box-shadow: var(--shadow);
 }
 
+/* 카드 제목 — 장 안의 소제목 노릇을 한다. 오른쪽 목차가 이걸 긁어 간다 */
 .panel-title {
-  font-size: var(--fs-sm);
+  font-size: 1.02rem;
   font-weight: 650;
-  color: var(--ink-2);
+  color: var(--ink-1);
+  letter-spacing: -0.01em;
   margin: 0 0 var(--sp-3);
 }
 
@@ -227,15 +303,29 @@ pre code { background: none; padding: 0; }
 }
 .code-hint { font-size: var(--fs-xs); color: var(--ink-muted); }
 
+/* 콜아웃. NumPy Lab 의 .callout 과 같은 모양이다 */
 .note {
   border-left: 3px solid var(--axis);
-  padding: var(--sp-2) 0 var(--sp-2) var(--sp-4);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+  padding: .7rem .95rem;
   color: var(--ink-2);
-  margin: 0 0 var(--sp-4);
+  font-size: .95rem;
+  margin: 1.1em 0;
+}
+.note-label {
+  display: block; font-weight: 700; font-size: .8rem;
+  letter-spacing: .03em; margin-bottom: .18em;
 }
 /* 경고는 색만으로 말하지 않는다 — 아이콘과 라벨이 함께 온다 */
-.note--danger { border-left-color: var(--c-danger); }
-.note--danger .note-label { color: var(--c-danger); font-weight: 650; }
+.note--danger { border-left-color: var(--c-danger); background: var(--c-danger-wash); }
+.note--danger .note-label { color: var(--c-danger); }
+.note--why { border-left-color: var(--s1); }
+.note--why .note-label { color: var(--s1); }
+.note--tip { border-left-color: var(--good); }
+.note--tip .note-label { color: var(--success-text); }
+.note--ver { border-left-color: var(--warning); }
+.note--ver .note-label { color: var(--ink-2); }
 
 /* 강조는 색이 아니라 링이다 */
 .is-focus {
@@ -266,19 +356,21 @@ pre code { background: none; padding: 0; }
 
 /* ─────────────────────────────────────────────── 표 */
 
-.tbl-wrap { overflow-x: auto; }     /* 넓은 표는 자기 안에서 스크롤 */
+.tbl-wrap { overflow-x: auto; margin: 1em 0; }   /* 넓은 표는 자기 안에서 스크롤 */
 table.tbl {
   border-collapse: collapse;
-  font-size: var(--fs-sm);
+  font-size: .88rem;
   font-variant-numeric: tabular-nums;  /* 세로로 정렬돼야 하는 곳에만 */
   width: 100%;
 }
 table.tbl th, table.tbl td {
-  padding: var(--sp-2) var(--sp-3);
+  padding: .42rem .6rem;
   text-align: right;
   border-bottom: 1px solid var(--grid);
   white-space: nowrap;
 }
+table.tbl tbody tr:hover { background: var(--surface-2); }
+table.tbl code { white-space: nowrap; }
 table.tbl th {
   color: var(--ink-2);
   font-weight: 650;
@@ -300,42 +392,73 @@ table.tbl tr.hl td { background: color-mix(in oklab, var(--c-original) 10%, tran
 
 button, .btn {
   font: inherit;
-  font-size: var(--fs-sm);
+  font-size: .88rem;
+  font-weight: 600;
   color: var(--ink-1);
-  background: var(--surface-raised);
-  border: 1px solid var(--axis);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
-  padding: var(--sp-2) var(--sp-3);
+  padding: .4rem .8rem;
   cursor: pointer;
   transition: background var(--dur), border-color var(--dur);
 }
-button:hover, .btn:hover { background: var(--surface-sunken); }
+button:hover, .btn:hover { background: var(--surface-2); }
 button[aria-pressed="true"], .btn.is-on {
   border-color: var(--c-original);
   box-shadow: inset 0 0 0 1px var(--c-original);
   font-weight: 650;
 }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.primary { background: var(--s1); border-color: var(--s1); color: #fff; }
+.btn.primary:hover { filter: brightness(1.08); }
+
+/* 세그먼트 컨트롤 (테마 전환 등) — 트랙 위에서 눌린 칸만 떠오른다 */
+.seg {
+  display: inline-flex; background: var(--surface-3);
+  border-radius: var(--radius-sm); padding: 2px; gap: 2px;
+}
+.seg > button {
+  border: 0; background: transparent; color: var(--ink-2);
+  padding: .32rem .68rem; border-radius: var(--radius-mark);
+  font-size: .85rem; font-weight: 600; font-family: var(--font-mono);
+  white-space: nowrap; box-shadow: none;
+}
+.seg > button[aria-pressed="true"] {
+  background: var(--surface); color: var(--ink-1); box-shadow: var(--shadow);
+}
+.seg > button:hover:not([aria-pressed="true"]) { color: var(--ink-1); background: transparent; }
 
 input[type="range"] { width: 100%; accent-color: var(--c-original); }
 input[type="text"], input[type="number"], select {
   font: inherit;
   font-size: var(--fs-sm);
   color: var(--ink-1);
-  background: var(--surface-sunken);
-  border: 1px solid var(--axis);
+  background: var(--surface);
+  border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
-  padding: var(--sp-2);
+  padding: .4rem .55rem;
 }
 
 .control-row {          /* 필터는 차트 위에 한 줄로 */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-3);
-  margin: 0 0 var(--sp-4);
+  gap: .6rem 1.1rem;
+  margin: 0 0 1.15rem;
 }
-.control-label { font-size: var(--fs-xs); color: var(--ink-2); }
+/* 컨트롤이 둘 이상이면 한 판으로 묶는다 — NumPy Lab 의 .controls 와 같은 모양이다.
+ * 컨트롤이 하나뿐인 줄까지 상자에 넣으면 버튼 하나가 과장돼 보이므로 :has() 로 가른다.
+ * :has() 를 모르는 브라우저는 이 규칙만 무시하고 나머지는 그대로 쓴다. */
+.control-row:has(> :nth-child(2)) {
+  padding: .75rem .9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.control-label {
+  font-size: .74rem; font-weight: 650; letter-spacing: .04em;
+  color: var(--ink-2); text-transform: uppercase;
+}
 
 /* ─────────────────────────────────────────────── 차트 */
 
@@ -385,6 +508,38 @@ input[type="text"], input[type="number"], select {
     var(--c-na) 0 1px, transparent 1px 5px);
   background-color: transparent;
 }
+
+/* ─────────────────────────────────────────────── 확인 문제
+ * NumPy Lab 의 .quiz 와 같은 모양이다. 보기는 줄로 쌓이고 A·B·C 표식이 앞에 온다.
+ * 정답·오답은 색만으로 말하지 않는다 — 표식 글자와 테두리가 함께 바뀐다. */
+
+.quiz { counter-reset: qn; }
+.q { border-top: 1px solid var(--grid); padding: 1rem 0 .4rem; }
+.q:first-child { border-top: 0; padding-top: 0; }
+.q-stem { font-weight: 600; margin: 0 0 .6rem; }
+.q-stem::before {
+  counter-increment: qn; content: "Q" counter(qn) ". ";
+  color: var(--s1); font-family: var(--font-mono);
+}
+.q-choices { display: flex; flex-direction: column; gap: .35rem; margin: 0 0 .5rem; }
+.q-choice {
+  display: flex; gap: .55rem; align-items: flex-start;
+  border: 1px solid var(--border); background: var(--surface-2);
+  border-radius: var(--radius-sm); padding: .45rem .7rem; cursor: pointer;
+  font-size: .93rem; font-weight: 400; text-align: left; color: var(--ink-1);
+}
+.q-choice:hover { border-color: var(--s1); background: var(--surface-2); }
+.q-choice .mk { font-family: var(--font-mono); color: var(--ink-muted); flex: none; font-weight: 700; }
+.q-choice[data-state="right"] { border-color: var(--good); background: var(--c-good-wash); }
+.q-choice[data-state="wrong"] { border-color: var(--critical); background: var(--c-danger-wash); }
+.q-choice[data-state="right"] .mk { color: var(--success-text); }
+.q-choice[data-state="wrong"] .mk { color: var(--critical); }
+.q-explain {
+  font-size: .9rem; color: var(--ink-2);
+  border-left: 3px solid var(--good); background: var(--surface-2);
+  padding: .55rem .8rem; border-radius: var(--radius-sm); margin: .4rem 0 0;
+}
+.q-explain[hidden] { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
