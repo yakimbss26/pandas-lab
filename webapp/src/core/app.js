@@ -21,7 +21,12 @@
 
   var STORE_KEY = 'pandas-lab/v1';
   var chapters = [];        // {id, num, title, subtitle, sim, key, render}
+  var extras = [];          // 장이 아닌 화면(과제). 진도 분모·홈 타일·이전/다음에 끼지 않는다
   var byId = {};
+
+  /* 과제는 별도 창에서 연다. 창 이름을 고정했으므로 몇 번을 눌러도 창이 하나만 뜬다.
+   * 과제 창이 장으로 갈아타 버리면 학생이 풀던 자리를 잃는다. */
+  var QUEST_WIN = 'pandas-lab-quest';
   var mounted = null;       // 현재 그려진 장 id
   var opts = {};
   var navLinks = {};        // id -> {a, dot}
@@ -49,7 +54,12 @@
    *     sim: '참조 카운트 실험실 · 연쇄 할당',   // 홈 타일의 시뮬레이터 요약 (없으면 생략)
    *     key: true,                              // 가장 많이 틀리는 개념 (★)
    *     render: function (root) { … }
-   *   }) */
+   *   })
+   *
+   * extra: true 를 주면 **장이 아닌 화면**이 된다(과제 등).
+   *   · 학습 과정 목록·홈 타일 격자·이전/다음 줄에 끼지 않는다
+   *   · 진도 분모(14장)를 늘리지 않는다 — 이게 핵심이다
+   *   · 사이드바에 별도 그룹으로, 홈에는 별도 칸으로 붙는다 */
   function register(spec) {
     if (!spec || !spec.id) throw new Error('register: id 가 필요하다');
     if (typeof spec.render !== 'function') throw new Error('register: ' + spec.id + ' 에 render 가 없다');
@@ -58,7 +68,7 @@
       return;
     }
     byId[spec.id] = spec;
-    chapters.push(spec);
+    if (spec.extra) extras.push(spec); else chapters.push(spec);
   }
 
   // ─────────────────────────────────────────────── 테마
@@ -94,6 +104,24 @@
       nav.appendChild(a);
     });
 
+    /* 장이 아닌 화면(과제)은 따로 묶는다. 학습 과정 번호를 이어받으면 15번째 장으로 보인다. */
+    if (extras.length) {
+      nav.appendChild(UI.el('div.nav-group', { text: '스스로 하기' }));
+      extras.forEach(function (c) {
+        var dot = UI.el('span.dot');
+        var a = UI.el('a', {
+          href: '#/' + c.id, 'data-id': c.id, target: QUEST_WIN,
+          title: '별도 창에서 열린다 — 장을 보러 가도 풀던 자리가 남는다'
+        }, [
+          UI.el('span.num', { text: '✎' }),
+          UI.el('span', { text: c.navTitle || c.title }),
+          dot
+        ]);
+        navLinks[c.id] = { a: a, dot: dot };
+        nav.appendChild(a);
+      });
+    }
+
     var progText = UI.el('div');
     var progFill = UI.el('i');
 
@@ -108,8 +136,13 @@
         ],
         onChange: setTheme
       }),
-      UI.btn('진도 초기화', function () {
-        if (confirm('방문 기록과 맞힌 문제를 모두 지운다. 계속하겠는가?')) UI.progress.reset();
+      /* 장 진도만 지운다. 과제 기록(quest:)은 건드리지 않는다 —
+       * 공용 PC 에서 이 버튼 한 번에 남의 과제 답까지 날아가면 안 된다.
+       * 과제 기록은 과제 화면 안에서 이름별로 지운다. */
+      UI.btn('장 진도 초기화', function () {
+        if (confirm('장 방문 기록과 확인 문제 정답을 지운다.\n과제(스스로 하기) 기록은 그대로 둔다.\n계속하겠는가?')) {
+          UI.progress.reset();
+        }
       }),
       UI.el('div.prog-line', null, [progText, UI.el('div.prog-bar', null, [progFill])])
     ]);
@@ -138,6 +171,16 @@
           : st.visited ? '방문함 (문제 ' + st.correct + '/' + (st.total || '?') + ')' : '아직 안 봄');
         if (st.visited) seen++;
         okQ += st.correct;
+      });
+      /* 과제 점도 같은 규칙으로 칠하되 **분모에는 넣지 않는다**. 14장은 14장이다. */
+      extras.forEach(function (c) {
+        var link = navLinks[c.id];
+        if (!link) return;
+        var st = UI.progress.stats(c.id);
+        var allRight = st.total > 0 && st.correct === st.total;
+        link.dot.className = 'dot' + (allRight ? ' done' : (st.visited ? ' seen' : ''));
+        link.dot.title = allRight ? '과제 문항 전부 해결'
+          : st.visited ? '과제 진행 중 (' + st.correct + ' / ' + (st.total || '?') + ')' : '아직 안 봄';
       });
       progText.textContent = '방문 ' + seen + '/' + chapters.length + ' · 문제 ' + okQ + '문 정답';
       progFill.style.width = (chapters.length ? (seen / chapters.length * 100) : 0).toFixed(0) + '%';
@@ -176,9 +219,21 @@
     });
     main.appendChild(tiles);
 
+    /* 과제는 장 격자에 섞지 않고 아래에 따로 세운다. 성격이 다른 화면이다. */
+    extras.forEach(function (c) {
+      main.appendChild(UI.el('a.tile.quest-cta', { href: '#/' + c.id, target: QUEST_WIN }, [
+        UI.el('div.n', { text: '스스로 하기 · 새 창' }),
+        UI.el('div.t', { text: c.title }),
+        UI.el('div.d', { text: c.subtitle || '' }),
+        c.sim ? UI.el('div.sim', { text: '▸ ' + c.sim }) : null
+      ]));
+    });
+
     main.appendChild(UI.note(
       '왼쪽 목록의 점은 진도 표시다. 회색은 방문한 장, 초록은 확인 문제를 모두 맞힌 장이다. ' +
-      '기록은 이 브라우저에만 저장되므로 다른 사람과 섞이지 않는다.', '사용법'));
+      '기록은 서버가 아니라 이 컴퓨터의 브라우저에 저장된다. 다른 사람의 컴퓨터와는 섞이지 않지만, ' +
+      '한 컴퓨터를 여러 사람이 쓰면 같은 기록을 보게 된다. 실습실처럼 공용 컴퓨터라면 ' +
+      '「스스로 하기」 화면에서 이름을 넣어 자기 기록을 따로 두자.', '기록은 어디에 남나'));
 
     main.appendChild(UI.note(
       '화면의 파이썬 코드는 블록 오른쪽 아래 복사 버튼을 누르면 그대로 가져갈 수 있다. ' +
@@ -247,12 +302,27 @@
 
     mounted = id;
     if (navLinks[id]) navLinks[id].a.classList.add('on');
-    document.title = spec.num + '. ' + spec.title + ' · ' + (opts.title || 'Pandas Lab');
+    document.title = (spec.extra ? spec.title : spec.num + '. ' + spec.title) +
+      ' · ' + (opts.title || 'Pandas Lab');
 
-    main.appendChild(UI.el('div.crumb', { text: spec.num + '장' }));
+    /* 과제에서 장으로 건너온 참이면 돌아가는 줄을 맨 위에 둔다.
+     * ★ 새 창이 막힌 컴퓨터(팝업 차단·키오스크)에서는 이 줄이 유일한 귀환 경로다.
+     *   과제를 거치지 않고 장에 들어오면 표식이 없으므로 뜨지 않는다. */
+    if (!spec.extra) {
+      var back = null;
+      try { back = UI.progress.load()['quest:return']; } catch (e) { back = null; }
+      if (back && Date.now() - (back.t || 0) < 12 * 3600 * 1000) {
+        main.appendChild(UI.el('div.quest-return', null, [
+          UI.el('span', { text: '과제를 하는 중이다. 확인했으면 돌아가자.' }),
+          UI.el('a.btn.primary', { href: '#/' + (back.to || 'quest'), text: '과제로 돌아가기' })
+        ]));
+      }
+    }
+
+    main.appendChild(UI.el('div.crumb', { text: spec.extra ? '스스로 하기' : spec.num + '장' }));
     main.appendChild(UI.el('h1.h-chapter', { text: spec.title }));
     if (spec.subtitle) main.appendChild(UI.el('p.lede', { text: spec.subtitle }));
-    if (window.LabData && window.LabData.synthetic) {
+    if (!spec.extra && window.LabData && window.LabData.synthetic) {
       main.appendChild(UI.el('p.small.muted', {
         text: '실습 데이터는 원본과 구조만 같은 합성 데이터다(지진 데이터는 USGS 실데이터).'
       }));
@@ -280,6 +350,14 @@
   function chapterNav(spec) {
     var i = chapters.indexOf(spec);
     var box = UI.el('div.chapter-nav');
+    /* 장이 아닌 화면은 이전/다음 줄에 끼지 않는다 — 처음 화면으로만 돌려보낸다 */
+    if (i < 0) {
+      box.appendChild(UI.el('a', { href: '#/' }, [
+        UI.el('span.k', { text: '← 돌아가기' }),
+        UI.el('span', { text: '처음 화면' })
+      ]));
+      return box;
+    }
     if (i > 0) {
       var p = chapters[i - 1];
       box.appendChild(UI.el('a', { href: '#/' + p.id }, [
@@ -411,6 +489,7 @@
     boot: boot,
     go: go,
     chapters: function () { return chapters.slice(); },
+    extras: function () { return extras.slice(); },     // 장이 아닌 화면(과제)
     get: function (id) { return byId[id]; },
     current: function () { return mounted; },
     state: state

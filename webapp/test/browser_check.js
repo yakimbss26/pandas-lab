@@ -125,6 +125,35 @@
     });
   });
 
+  /* ── 5-1. 장이 아닌 화면(과제) — 그리기만 한다
+   *
+   * 여기서는 **버튼을 누르지 않는다.** 과제 화면의 버튼은 confirm() 을 띄우고
+   * localStorage 의 학생 기록을 건드리며 location.reload() 까지 부른다.
+   * 자동 클릭 스윕에 넣으면 검사가 학생 답을 지우고 페이지를 새로 고쳐 버린다.
+   * 그리기만 해도 로드 순서·API 오타·태그 누출은 다 잡힌다. */
+  var extras = (typeof Lab.extras === 'function') ? Lab.extras() : [];
+  var extraReport = [];
+  extras.forEach(function (c) {
+    var before = errors.length;
+    var root = document.createElement('div');
+    document.body.appendChild(root);
+    try {
+      c.render(root);
+    } catch (e) {
+      fail(c.id + ' render: ' + e.message);
+    }
+    root.querySelectorAll('table.tbl td, table.tbl th').forEach(function (cell) {
+      totalCells++;
+      if (TAGLIKE.test(cell.textContent)) tagLeaks.push({ id: c.id, text: cell.textContent.slice(0, 60) });
+    });
+    extraReport.push({
+      id: c.id,
+      nodes: root.querySelectorAll('*').length,
+      newErrors: errors.length - before
+    });
+    root.remove();
+  });
+
   // ── 6. 테마 토큰
   var cs = getComputedStyle(document.documentElement);
   var tokens = {};
@@ -143,6 +172,8 @@
     tagTextLeaks: tagLeaks,
     themeTokens: tokens,
     scrollRestoration: history.scrollRestoration,
-    chapters: report
+    chapters: report,
+    extraCount: extras.length,
+    extras: extraReport
   }, null, 1);
 })();

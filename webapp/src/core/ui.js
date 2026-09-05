@@ -553,6 +553,90 @@
     return b;
   }
 
+  /* textInput({label, value, placeholder, wide, onChange, onEnter})
+   * 학생이 답을 직접 적는 자리. 반환 노드에 setValue / focus 가 붙는다. */
+  function textInput(opts) {
+    opts = opts || {};
+    var inp = el('input', {
+      type: 'text', value: opts.value || '', placeholder: opts.placeholder || '',
+      oninput: function () { if (opts.onChange) opts.onChange(inp.value); },
+      onkeydown: function (e) { if (e.key === 'Enter' && opts.onEnter) opts.onEnter(inp.value); }
+    });
+    if (opts.wide) inp.classList.add('wide');
+    var w = el('div.ctl', null, [
+      opts.label ? el('label.control-label', { text: opts.label }) : null,
+      inp
+    ]);
+    w.setValue = function (v) { inp.value = v; if (opts.onChange) opts.onChange(v); };
+    w.focus = function () { inp.focus(); };
+    return w;
+  }
+
+  /* chips(['가','나'], onPick) — 짧은 선택지를 알약으로 늘어놓는다.
+   * 계열 칩(.chip 범례)과 이름이 겹치지 않게 .pill 을 쓴다. */
+  function chips(items, onPick) {
+    return el('div.pills', null, (items || []).map(function (t) {
+      var val = typeof t === 'string' ? t : t.value;
+      var lab = typeof t === 'string' ? t : t.label;
+      return el('button.pill', {
+        type: 'button', text: lab,
+        onclick: function () { if (onPick) onPick(val); }
+      });
+    }));
+  }
+
+  /* statRow([{k, v, sub}]) — 숫자 몇 개를 나란히. 확인서·요약에 쓴다 */
+  function statRow(stats) {
+    return el('div.stat-row', null, (stats || []).map(function (s) {
+      return el('div.stat', null, [
+        el('div.k', { text: s.k }),
+        el('div.v', { text: s.v }),
+        s.sub ? el('div.sub', { text: s.sub }) : null
+      ]);
+    }));
+  }
+
+  /* modal({title, body, onClose}) — <dialog> 라서 Esc 와 배경 어둡게가 공짜로 따라온다.
+   *
+   * ★ 닫을 때 close 이벤트만 믿으면 안 된다. 그 이벤트는 비동기라서 노드가 DOM 에 남고,
+   *   다음에 띄우는 창을 가려 버린다. 그래서 (a) 열 때 남아 있는 창을 먼저 지우고
+   *   (b) 닫을 때도 직접 remove 한다. */
+  function modal(opts) {
+    opts = opts || {};
+    Array.prototype.forEach.call(document.querySelectorAll('dialog.modal'), function (d) {
+      if (d.open) { try { d.close(); } catch (e) { /* 이미 닫혔다 */ } }
+      d.remove();
+    });
+
+    var dlg = el('dialog.modal');
+    var closed = false;
+
+    function close() {
+      if (closed) return;
+      closed = true;
+      if (dlg.open) { try { dlg.close(); } catch (e) { /* 이미 닫혔다 */ } }
+      dlg.remove();
+      if (opts.onClose) opts.onClose();
+    }
+
+    dlg.appendChild(el('div.modal-head', null, [
+      el('div.modal-title', { text: opts.title || '' }),
+      el('button.modal-x', { type: 'button', 'aria-label': '닫기', text: '✕', onclick: close })
+    ]));
+    dlg.appendChild(el('div.modal-body', null, opts.body || []));
+    dlg.appendChild(el('div.modal-foot', null, [btn('닫기', close)]));
+
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });  // 배경 클릭
+    dlg.addEventListener('close', close);                                           // Esc
+
+    document.body.appendChild(dlg);
+    if (dlg.showModal) dlg.showModal();
+    else dlg.setAttribute('open', 'open');    // <dialog> 미지원 브라우저 대비
+
+    dlg.closeModal = close;
+    return dlg;
+  }
+
   // ─────────────────────────────────────────────── 코드·출력
 
   /* 데이터셋별 실행 준비 코드.
@@ -664,10 +748,15 @@
     return box;
   }
 
-  function note(message, title) {
-    var box = el('div.note');
-    if (title) box.appendChild(el('span.note-label', { text: title + ' ' }));
-    box.appendChild(document.createTextNode(message));
+  /* note(message, title, opts)
+   *   opts.kind: 'why' | 'tip' | 'ver' | 'danger'  — 왼쪽 줄 색만 바뀐다
+   *   opts.html: true 면 message 를 HTML 로 넣는다. escape 책임은 호출자에게 있다. */
+  function note(message, title, opts) {
+    opts = opts || {};
+    var box = el('div.note' + (opts.kind ? '.note--' + opts.kind : ''));
+    if (title) box.appendChild(el('span.note-label', { text: title }));
+    if (opts.html) box.appendChild(el('div', { html: message }));
+    else box.appendChild(document.createTextNode(message));
     return box;
   }
 
@@ -760,7 +849,17 @@
       if (typeof tot !== 'number') tot = answered;      // 아직 그려 본 적이 없는 장
       return { total: tot, answered: answered, correct: ok, visited: !!d['visit:' + id] };
     },
-    reset: function () { this.save({}); emitProgress(); },
+    /* 장 진도만 지운다. 과제(quest:) 와 보관함(questbox:) 은 건드리지 않는다 —
+     * 사이드바의 "장 진도 초기화" 한 번에 남의 과제 답까지 날아가면 안 된다.
+     * 과제 기록은 과제 화면 안에서 이름별로 따로 지운다. */
+    reset: function () {
+      var d = this.load();
+      Object.keys(d).forEach(function (k) {
+        if (k.indexOf('quest:') !== 0 && k.indexOf('questbox:') !== 0) delete d[k];
+      });
+      this.save(d);
+      emitProgress();
+    },
     /* 장을 그리기 직전에 부른다. 그 장의 문제 번호를 0 부터 다시 매긴다 —
      * 번호가 렌더마다 밀리면 다시 방문했을 때 다른 문제로 기록된다. */
     beginChapter: function (id) { this.chapter = id || null; if (id) quizSeq[id] = 0; },
@@ -850,8 +949,9 @@
     niceTicks: niceTicks, scale: scale,
     // 컨트롤
     slider: slider, buttonGroup: buttonGroup, toggle: toggle, seg: seg, btn: btn,
+    textInput: textInput, chips: chips,
     // 텍스트
-    code: code, note: note, danger: danger,
+    code: code, note: note, danger: danger, statRow: statRow, modal: modal,
     copyToClipboard: copyToClipboard, PREAMBLE: PREAMBLE,
     // 단계·문제·진도
     stepper: stepper, quiz: quiz, progress: progress

@@ -583,6 +583,137 @@ input[type="text"], input[type="number"], select {
 }
 .q-explain[hidden] { display: none; }
 
+/* ─────────────────────────────────────────────── 스스로 하기(과제) 화면
+ * 새 컴포넌트를 만들지 않는다. 기존 .card · .quiz · .q · .q-stem · .q-explain 을
+ * 그대로 쓰고, 여기서는 자유 입력 답안줄 · 배지 · 진도만 덧붙인다.
+ * 문항에 자체 번호(2-1a)가 있으므로 .q-stem 의 "Q1." 카운터는 끈다. */
+
+.quest .q-stem::before { content: none; }
+
+.q-no {
+  font-family: var(--font-mono); font-size: .84rem; font-weight: 700;
+  color: var(--s1); background: var(--s1-wash);
+  border-radius: var(--radius-mark); padding: .06rem .4rem; margin-right: .4rem;
+}
+.q-no.memo { color: var(--ink-2); background: var(--surface-3); }
+
+.q-answer {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: .55rem;
+  margin: .6rem 0 .4rem;
+}
+.q-verdict { font-size: .9rem; font-weight: 600; color: var(--ink-2); align-self: center; }
+.q-verdict[data-state="right"] { color: var(--success-text); }
+.q-verdict[data-state="wrong"] { color: var(--critical); }
+
+.q-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; margin: 0 0 .35rem; }
+.q-flip { margin: .5rem 0 0; color: var(--ink-2); }
+
+.q-note textarea {
+  width: 100%; min-height: 4.6rem; resize: vertical;
+  font: inherit; font-size: .93rem; line-height: 1.6; color: var(--ink-1);
+  background: var(--surface); border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm); padding: .6rem .75rem;
+}
+.q-note textarea:focus { outline: 2px solid var(--s1); outline-offset: 1px; border-color: var(--s1); }
+
+/* 세로로 쌓는 컨트롤 한 칸 (라벨 위, 입력 아래) */
+.ctl { display: flex; flex-direction: column; gap: .3rem; }
+.ctl input[type="text"] { min-width: 11rem; }
+.ctl input[type="text"].wide { min-width: 20rem; }
+
+/* 알약 — 짧은 선택지. 계열 범례(.chip)와 이름이 겹치지 않게 따로 둔다 */
+.pills { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pill {
+  font-family: var(--font-mono); font-size: .82rem; font-weight: 600;
+  border: 1px solid var(--border-2); background: var(--surface);
+  color: var(--ink-2); border-radius: 999px; padding: .22rem .7rem;
+}
+.pill:hover { border-color: var(--s1); color: var(--s1); background: var(--surface); }
+
+.quest-prog {
+  display: flex; align-items: center; gap: .8rem;
+  font-size: .9rem; color: var(--ink-2); margin: .3rem 0 .9rem;
+}
+.quest-prog .bar {
+  flex: 1; max-width: 20rem; height: 6px; border-radius: 999px;
+  background: var(--surface-3); overflow: hidden;
+}
+.quest-prog .bar > i { display: block; height: 100%; width: 0; background: var(--good); transition: width .25s; }
+
+.quest-who {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .6rem;
+  margin: .3rem 0 1.1rem;
+}
+.quest-who .who-note { font-size: .86rem; color: var(--ink-muted); }
+
+.badge-row { display: flex; flex-wrap: wrap; gap: .45rem; margin: 0 0 1.4rem; }
+.badge {
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: .22rem .7rem; font-size: .82rem; color: var(--ink-muted);
+  background: var(--surface-2);
+}
+.badge.on {
+  border-color: var(--good); color: var(--success-text);
+  background: var(--c-good-wash); font-weight: 650;
+}
+
+.cert-name {
+  font-size: 1.4rem; font-weight: 650; letter-spacing: var(--tracking-head);
+  margin: 0 0 .3rem; color: var(--ink-1);
+}
+
+.stat-row { display: flex; flex-wrap: wrap; gap: .8rem; margin: 1em 0; }
+.stat {
+  flex: 1 1 8rem; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: .75rem .95rem;
+}
+.stat .k { font-size: .72rem; color: var(--ink-muted); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.stat .v { font-size: 1.5rem; font-weight: 650; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.stat .sub { font-size: .78rem; color: var(--ink-muted); font-family: var(--font-mono); }
+
+/* 홈과 사이드바에서 과제로 보내는 칸 */
+.tile.quest-cta { border-color: var(--s1); background: var(--s1-wash); margin: 0 0 2rem; }
+.tile.quest-cta .n { color: var(--s1); }
+
+/* 과제에서 장으로 건너왔을 때 맨 위에 붙는 귀환 줄.
+ * 새 창이 막힌 컴퓨터에서는 이 줄이 유일한 귀환 경로다. */
+.quest-return {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .8rem;
+  border: 1px solid var(--s1); background: var(--s1-wash);
+  border-radius: var(--radius-sm); padding: .7rem .95rem; margin: 0 0 1.4rem;
+  font-size: .92rem;
+}
+.quest-return a.btn { text-decoration: none; }
+
+/* ─────────────────────────────────────────────── 모달
+ * 힌트처럼 본문을 가리지 않고 따로 띄워야 하는 것에 쓴다.
+ * <dialog> 라서 Esc 로 닫히고 포커스가 안에 갇힌다(브라우저 기본 동작). */
+
+.modal {
+  border: 1px solid var(--border-2); border-radius: var(--radius);
+  background: var(--surface); color: var(--ink-1);
+  padding: 0; width: 100%; max-width: min(34rem, calc(100vw - 2rem));
+  box-shadow: var(--shadow-2);
+}
+.modal::backdrop { background: rgba(11, 11, 11, 0.42); }
+.modal-head {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .9rem 1.1rem; border-bottom: 1px solid var(--grid);
+}
+.modal-title { font-weight: 650; font-size: 1.06rem; flex: 1; letter-spacing: var(--tracking-head); }
+.modal-x {
+  border: 0; background: none; color: var(--ink-muted);
+  font-size: 1rem; line-height: 1; padding: .3rem .4rem; border-radius: var(--radius-mark);
+}
+.modal-x:hover { background: var(--surface-2); color: var(--ink-1); }
+.modal-body { padding: 1.1rem; font-size: .95rem; line-height: 1.7; }
+.modal-body p { margin: 0 0 .7rem; }
+.modal-body p:last-child { margin-bottom: 0; }
+.modal-foot {
+  display: flex; justify-content: flex-end; gap: .45rem;
+  padding: .8rem 1.1rem; border-top: 1px solid var(--grid);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
 }

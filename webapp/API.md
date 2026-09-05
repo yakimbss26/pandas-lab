@@ -126,7 +126,8 @@ npm run build
 |:---|:---|
 | `Lab.register({id, num, title, subtitle, sim, key, render})` | 자기를 등록한다. **로드 시점에 즉시 부른다** |
 | `Lab.go(id)` | 다른 장으로 이동 |
-| `Lab.chapters()` | 등록된 장 목록 |
+| `Lab.chapters()` | 등록된 **장** 목록 (14개) |
+| `Lab.extras()` | 장이 아닌 화면 목록 (과제) |
 
 `register` 는 `id` 와 `render` 가 필수다. 같은 `id` 를 두 번 등록하면 두 번째는 무시되고 경고가 난다.
 
@@ -140,6 +141,27 @@ npm run build
 
 `sim` 문구는 장 안의 `.panel-title` 을 줄인 것이다. 시뮬레이터를 더하거나 빼면 여기도 고친다 —
 홈 화면이 없는 시뮬레이터를 광고하면 학생이 찾다가 지친다.
+
+### 장이 아닌 화면 — `extra: true`
+
+과제(`modules/quest.js`)처럼 **장이 아닌 화면**은 `extra: true` 로 등록한다.
+
+```js
+Lab.register({ id: 'quest', extra: true, navTitle: '과제', title: '…', subtitle: '…', render: render });
+```
+
+| | `extra` 없음 (장) | `extra: true` |
+|:---|:---|:---|
+| 사이드바 | "학습 과정" 목록에 번호와 함께 | "스스로 하기" 그룹에 따로 |
+| 홈 화면 | 타일 격자 안 | 격자 **아래** 별도 칸(`.tile.quest-cta`) |
+| 이전/다음 | 앞뒤 장으로 | "처음 화면" 하나만 |
+| **진도 분모** | **센다 (14장)** | **세지 않는다** |
+| 링크 | 같은 창 | `target` 으로 **별도 창** |
+
+**분모를 늘리지 않는 것이 핵심이다.** 과제가 15번째 장으로 잡히면 "방문 3/15" 처럼
+학생이 본 적 없는 장이 하나 더 있는 것처럼 보인다.
+
+`navTitle` 은 사이드바에만 쓰는 짧은 이름이다(없으면 `title` 을 쓴다).
 
 > **★ 로드 순서**: `df → ui → data → app → modules → boot`.
 > `app.js` 가 `window.Lab` 을 정의한다. 모듈이 먼저 로드되면 **조용히 `Lab is not defined` 로 죽어
@@ -412,6 +434,8 @@ UI.buttonGroup([{ label, value }, …], { label, selected: 0, onChange: function
 UI.toggle({ label, value, onChange: function (on) {…} })
 UI.seg({ label, value, options: [{ value, label }, …], onChange: function (v) {…} })
 UI.btn('라벨', onClick, { primary: true })
+UI.textInput({ label, value, placeholder, wide, onChange, onEnter })   // 반환값에 setValue/focus
+UI.chips(['가', '나'], function (v) {…})                               // 짧은 선택지 알약
 ```
 
 `onChange` 안에서 `rebuild()` 를 불러 화면을 다시 그린다(§1 ②).
@@ -423,9 +447,19 @@ UI.btn('라벨', onClick, { primary: true })
 
 ```js
 UI.code(src, { title, output, dataset, copyText, noCopy })
-UI.note(message, title)
+UI.note(message, title, { kind: 'why'|'tip'|'ver'|'danger', html: true })
 UI.danger(label, message)           // ⚠ 아이콘 + 라벨 + 빨강. 경고는 이것만 쓴다
+UI.statRow([{ k: '해결한 문항', v: '7 / 25', sub: '…' }])   // 숫자 몇 개를 나란히
+UI.modal({ title, body: [노드…], onClose })                 // <dialog>. Esc·배경 클릭으로 닫힌다
 ```
+
+`UI.note` 의 `kind` 는 왼쪽 줄 색만 바꾼다(파랑/초록/노랑/빨강). `html: true` 를 주면
+`message` 를 HTML 로 넣으므로 **escape 책임은 호출자에게 있다** — 학생 입력을 넣을 때는
+`UI.esc()` 를 통과시켜라.
+
+**`UI.modal` 은 한 번에 하나만 뜬다.** 열 때 남아 있던 창을 먼저 지우고, 닫을 때도 직접
+`remove` 한다 — `close` 이벤트는 비동기라 그것만 믿으면 노드가 DOM 에 남아 **다음 창을 가린다.**
+반환값의 `closeModal()` 로 직접 닫을 수 있다.
 
 `title` 은 `.panel-title` 이 되어 **오른쪽 목차에 오른다.** 코드 조각마다 제목을 달면 목차가
 쓸모없어지니, 절 하나에 하나만 단다. `output` 은 `.out-label` + 무채색 블록으로 그려져
@@ -472,10 +506,14 @@ UI.quiz({
 
 ```js
 UI.progress.stats(id)   // {total, answered, correct, visited} — total 은 그 장의 문제 수
-UI.progress.reset()     // 사이드바의 "진도 초기화" 가 부른다
+UI.progress.reset()     // 사이드바의 "장 진도 초기화" 가 부른다
 ```
 
 셸이 알아서 부르므로 모듈이 `beginChapter`/`endChapter`/`visit` 를 직접 부를 일은 없다.
+
+**`reset()` 은 `quest:` 와 `questbox:` 로 시작하는 키를 건드리지 않는다.** 공용 PC 에서
+"장 진도 초기화" 한 번에 남의 과제 답까지 날아가면 안 되기 때문이다. 과제 기록은 과제
+화면 안에서 이름별로 지운다. **저장소에 새 키를 만들 때 이 규칙을 확인하라.**
 
 ---
 

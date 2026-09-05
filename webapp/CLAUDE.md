@@ -18,6 +18,7 @@ webapp/
       data.js     실습 데이터 (빌드 생성. 손으로 고치지 않는다)
     modules/
       chNN-*.js   장별 화면. 파일명 사전순 = 표시 순서
+      quest.js    스스로 하기(과제) 화면. 장이 아니다 — extra:true
   test/
 ```
 
@@ -94,7 +95,9 @@ webapp/
   .crumb .chapter-nav .topbar .scrim .toc .hero .tiles .tile`
 - 본문 유틸: `.h-chapter .h-sec .h-sub .lede .muted .small .nowrap`
 - 위젯: `.card .panel-title .note(.note--why/tip/ver/danger) .seg .btn .quiz .q-choice
-  .control-row .tbl .chip .viz .codeblock .out-label`
+  .control-row .tbl .chip .viz .codeblock .out-label .ctl .pills/.pill .stat-row/.stat .modal`
+- 과제 전용: `.quest .q-no .q-answer .q-verdict .q-meta .q-flip .q-note
+  .quest-who .quest-prog .badge/.badge-row .cert-name .quest-return .tile.quest-cta`
 
 **`.panel-title` 은 카드 소제목이다.** 오른쪽 목차가 이걸 긁어 가므로 **작은 딱지에 쓰지 마라** —
 "출력" 같은 딱지에 쓰면 목차가 그 단어로 도배된다. 그런 딱지는 `.out-label` 을 쓴다.
