@@ -416,7 +416,7 @@ function buildIndex(mods) {
     '  <!-- 로드 순서: df -> ui -> data -> app -> modules -> boot.',
     '       app.js 가 modules 보다 나중에 오면 장이 하나도 등록되지 않는다. -->',
     scripts,
-    '  <script>Lab.boot({ title: "Pandas Lab", bookHref: "pandas.md" });</script>',
+    '  <script>Lab.boot({ title: "Pandas Lab" });</script>',
     '</body>',
     '</html>',
     ''

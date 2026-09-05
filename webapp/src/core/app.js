@@ -111,7 +111,6 @@
       UI.btn('진도 초기화', function () {
         if (confirm('방문 기록과 맞힌 문제를 모두 지운다. 계속하겠는가?')) UI.progress.reset();
       }),
-      opts.bookHref ? UI.el('a.btn', { href: opts.bookHref, text: '교재 보기' }) : null,
       UI.el('div.prog-line', null, [progText, UI.el('div.prog-bar', null, [progFill])])
     ]);
 
@@ -339,7 +338,10 @@
 
   // ─────────────────────────────────────────────── 부팅
 
-  /* 모듈이 전부 등록된 뒤에 부른다. index.html 의 맨 마지막. */
+  /* 모듈이 전부 등록된 뒤에 부른다. index.html 의 맨 마지막.
+   *   Lab.boot({ title: 'Pandas Lab' })
+   * 예전에 사이드바에 있던 "교재 보기"(bookHref) 는 뺐다. 웹앱 안에서 교재로 나가는 길은
+   * 두지 않는다 — 교재는 README 와 저장소에서 본다. */
   function boot(o) {
     opts = o || {};
     if (!window.DF) { fatal('DF 엔진이 없다. df.js 가 app.js 보다 먼저 로드되어야 한다.'); return; }
