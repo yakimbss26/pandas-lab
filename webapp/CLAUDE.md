@@ -36,10 +36,10 @@ webapp/
 5. **표 위젯의 HTML escape 는 열(`cols`) 속성이다.** `raw: true` 를 행에 붙이면 `<b>` 가 글자로 보인다.
 6. **빌드는 원본이 없으면 기존 `data.js` 를 보존한다.** `buildData()` 가 `null` 을 반환하면
    "기존 파일 유지" 를 뜻한다. 그러지 않으면 저장소를 클론한 사람이 빌드하는 순간 데이터가 전부 날아간다.
-7. **디자인은 NumPy Lab 과 한 벌이다.** https://yakimbss26.github.io/numpy-lab/ 과
-   표면·잉크·형태 토큰이 같고 셸(사이드바·홈 화면·이전/다음·오른쪽 목차·모바일 서랍)도 같다.
+7. **셸 구조는 NumPy Lab 과 한 벌이다.** https://yakimbss26.github.io/numpy-lab/ 과
+   역할색·상태색이 같고 셸(사이드바·홈 화면·이전/다음·오른쪽 목차·모바일 서랍)도 같다.
    학생이 한 학기에 두 사이트를 함께 쓰므로 **같은 자리를 눌러야 한다.**
-   토큰이나 셸 구조를 바꿀 일이 생기면 `C:\numpy` 를 함께 고친다. 자세한 것은 아래 "디자인 통일".
+   **활자와 여백만 pandas 쪽이 앞서 있다**(Pretendard·넓은 여백). 아래 "디자인" 절 참고.
 
 ## 데이터 정책
 
@@ -68,16 +68,22 @@ webapp/
 
 차트를 만들기 전에 `dataviz` 스킬을 로드하고, 팔레트를 건드렸다면 `validate_palette.js` 를 다시 돌린다.
 
-## 디자인 통일 — NumPy Lab 과 한 벌
+## 디자인
 
 두 사이트를 한 학기에 함께 쓴다. **같은 것은 같아 보여야 하고 같은 자리에 있어야 한다.**
+지금 상태는 **구조는 한 벌, 활자는 pandas 가 앞서 있음**이다.
 
-| 무엇 | 어디에 |
-|:---|:---|
-| 표면·잉크·형태·그림자 값 | `src/theme.css` `:root` — NumPy Lab 과 같은 값 |
-| 셸 배치(사이드바 268px · 본문 900px · 모바일 서랍 900px) | `src/app.css` — NumPy Lab 에서 그대로 가져왔다 |
-| 셸 동작(홈 타일 · 진도 점 · 이전/다음 · 오른쪽 목차) | `src/core/app.js` |
-| 탭 아이콘(파란 사각형 + 모노 글자)·제목·설명 | `build.js` 의 `FAVICON` / `PAGE_TITLE` / `PAGE_DESC` |
+| 무엇 | 어디에 | NumPy Lab 과 |
+|:---|:---|:---|
+| 역할색·상태색·순차 램프 | `src/theme.css` `:root` | **같다** (팔레트 검증기로 확정) |
+| 표면·잉크·그림자 값 | `src/theme.css` `:root` | **같다** |
+| 셸 배치(사이드바 268px · 모바일 서랍 900px) | `src/app.css` | **같다** |
+| 셸 동작(홈 타일 · 진도 점 · 이전/다음 · 오른쪽 목차) | `src/core/app.js` | **같다** |
+| 탭 아이콘(파란 사각형 + 모노 글자)·제목·설명 | `build.js` 의 `FAVICON`/`PAGE_TITLE`/`PAGE_DESC` | 형식이 같다 |
+| 서체·자간·행간·여백·본문 폭 | `src/theme.css` 타이포 토큰, `src/app.css` | **pandas 만 다듬음** |
+
+활자 쪽 값과 근거는 `../CLAUDE.md` §7-2 에 표로 있다. numpy-lab 에 그대로 옮기면
+다시 완전히 한 벌이 된다 — 옮길 것은 타이포·여백 토큰뿐이고 셸은 손댈 필요가 없다.
 
 역할 토큰(`--c-original` 등)이 이 프로젝트의 이름이고, NumPy Lab 에서 가져온 CSS 가 쓰는
 `--s1` `--surface` `--ink` 같은 이름은 **theme.css 의 `:root` 안에서 별칭으로 묶여 있다.**
@@ -88,7 +94,10 @@ webapp/
   .crumb .chapter-nav .topbar .scrim .toc .hero .tiles .tile`
 - 본문 유틸: `.h-chapter .h-sec .h-sub .lede .muted .small .nowrap`
 - 위젯: `.card .panel-title .note(.note--why/tip/ver/danger) .seg .btn .quiz .q-choice
-  .control-row .tbl .chip .viz`
+  .control-row .tbl .chip .viz .codeblock .out-label`
+
+**`.panel-title` 은 카드 소제목이다.** 오른쪽 목차가 이걸 긁어 가므로 **작은 딱지에 쓰지 마라** —
+"출력" 같은 딱지에 쓰면 목차가 그 단어로 도배된다. 그런 딱지는 `.out-label` 을 쓴다.
 
 `.control-row` 는 **컨트롤이 둘 이상이면** `:has()` 로 회색 판이 된다(NumPy Lab 의 `.controls`).
 하나뿐이면 판이 되지 않는다 — 버튼 하나가 상자에 담기면 과장돼 보인다.

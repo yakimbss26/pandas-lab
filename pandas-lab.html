@@ -7,6 +7,8 @@
   <title>Pandas Lab — 과학고 pandas 심화 학습 (단일 파일)</title>
   <meta name="description" content="브라우저에서 도는 미니 DataFrame 엔진과 시뮬레이터로 배우는 pandas 심화 학습 실습장.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232a78d6'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='15' font-weight='bold' fill='white' text-anchor='middle'%3Epd%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
   <style>
 /* ===== theme.css ===== */
 /* theme.css — 디자인 시스템
@@ -78,17 +80,26 @@
   /* 순서형(ordinal) 램프는 라이트에서 250 보다 밝게 시작하지 않는다 */
   --seq-ordinal-min: #86b6ef;
 
-  /* ── 타이포 (모두 시스템 산세리프. 디스플레이·세리프 없음) */
-  --font-sans: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  /* ── 타이포
+   * 본문은 Pretendard(SIL OFL 1.1). 한글 자소가 고르게 서서 긴 글이 덜 피곤하다.
+   * ★ 폴백이 진짜 폴백이어야 한다 — CDN 을 못 받으면 system-ui 로 조용히 내려가고
+   *   화면은 그대로 돈다. 서체를 전제로 한 픽셀 맞춤(음수 여백 등)을 하지 마라.
+   * 디스플레이·세리프는 쓰지 않는다. 무게와 여백으로만 위계를 만든다. */
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, -apple-system,
+               "Segoe UI", "Malgun Gothic", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
   --fs-xs: 0.75rem;
   --fs-sm: 0.875rem;
-  --fs-base: 15.5px;             /* NumPy Lab 본문과 같은 크기 */
+  --fs-base: 15.5px;             /* 코드·표와 함께 읽어야 하므로 키우지 않는다 */
   --fs-lg: 1.125rem;
   --fs-xl: 1.5rem;
   --fs-hero: 2.5rem;
-  --lh-tight: 1.35;
-  --lh-base: 1.72;
+  --lh-tight: 1.3;
+  --lh-base: 1.78;               /* 한 줄이 길어 행간을 한 단 넓혔다 */
+
+  /* 제목 자간. 크기가 커질수록 더 조인다 — 큰 글자는 사이가 벌어져 보인다 */
+  --tracking-title: -0.03em;
+  --tracking-head: -0.018em;
 
   /* ── 간격·형태 */
   --sp-1: 4px;
@@ -223,25 +234,38 @@ body {
   color: var(--ink-1);
   background: var(--surface-page);
   -webkit-font-smoothing: antialiased;
+  /* 한국어는 어절 안에서 끊으면 안 읽힌다. 어절 단위로 넘긴다.
+   * 긴 영문 식별자(DataFrameGroupBy 등)는 그래도 넘칠 수 있으므로 함께 풀어 준다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 h1, h2, h3, h4 {
   line-height: var(--lh-tight); margin: 0 0 var(--sp-3);
-  font-weight: 650; letter-spacing: -0.01em;
+  font-weight: 650; letter-spacing: var(--tracking-head);
+  text-wrap: balance;            /* 제목 마지막 줄에 한 단어만 남는 것을 막는다 */
 }
 h1 { font-size: var(--fs-xl); }
 h2 { font-size: var(--fs-lg); }
 h3 { font-size: var(--fs-base); }
-p { margin: 0 0 var(--sp-4); }
+p { margin: 0 0 1.15em; text-wrap: pretty; }
 a { color: var(--c-original); text-decoration: none; text-underline-offset: 2px; }
 a:hover { text-decoration: underline; }
 button { font-family: inherit; font-size: inherit; }
 
-/* 본문 리듬용 유틸 — NumPy Lab 과 같은 이름·같은 값 */
-.h-chapter { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.15rem); margin: 0 0 .2em; }
-.h-sec  { font-size: 1.32rem; margin: 2.6em 0 .7em; }
-.h-sub  { font-size: 1.06rem; margin: 1.9em 0 .5em; color: var(--ink-1); }
-.lede   { color: var(--ink-2); font-size: 1.03rem; margin-bottom: 1.6em; }
+/* 본문 리듬용 유틸 */
+.h-chapter {
+  font-size: clamp(2rem, 1.5rem + 2.1vw, 2.6rem);
+  letter-spacing: var(--tracking-title);
+  line-height: 1.22;
+  margin: 0 0 .32em;
+}
+.h-sec  { font-size: 1.42rem; margin: 3em 0 .8em; letter-spacing: var(--tracking-title); }
+.h-sub  { font-size: 1.08rem; margin: 2em 0 .5em; color: var(--ink-1); }
+.lede   {
+  color: var(--ink-2); font-size: 1.15rem; line-height: 1.62;
+  letter-spacing: -0.006em; margin-bottom: 1.9em; max-width: 44rem;
+}
 .muted  { color: var(--ink-muted); }
 .small  { font-size: .875rem; }
 .nowrap { white-space: nowrap; }
@@ -258,11 +282,13 @@ code:not(pre code) {
 pre {
   background: var(--surface-sunken);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--sp-4);
+  border-left: 3px solid var(--s1);   /* 코드 덩어리의 시작을 눈이 바로 찾는다 */
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
   margin: 0 0 var(--sp-4);
   overflow-x: auto;               /* 넓은 코드는 자기 안에서 스크롤한다 */
-  line-height: 1.55;
+  line-height: 1.62;
+  tab-size: 4;
 }
 pre code { background: none; padding: 0; }
 
@@ -279,23 +305,38 @@ pre code { background: none; padding: 0; }
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.15rem 1.3rem 1.3rem;
-  margin: 1.5em 0;
+  padding: 1.6rem 1.75rem 1.75rem;
+  margin: 2.4em 0;               /* 카드 사이를 벌려 장이 한 덩어리로 뭉치지 않게 한다 */
   box-shadow: var(--shadow);
 }
+.card > *:last-child { margin-bottom: 0; }   /* 카드 아래에 여백이 두 번 쌓이지 않게 */
 
 /* 카드 제목 — 장 안의 소제목 노릇을 한다. 오른쪽 목차가 이걸 긁어 간다 */
 .panel-title {
-  font-size: 1.02rem;
+  font-size: 1.14rem;
   font-weight: 650;
   color: var(--ink-1);
-  letter-spacing: -0.01em;
-  margin: 0 0 var(--sp-3);
+  letter-spacing: var(--tracking-head);
+  line-height: 1.35;
+  margin: 0 0 1rem;
 }
 
 /* 코드 블록 + 복사 버튼 — 학생이 IDLE 이나 주피터에 붙여 실행한다 */
-.codeblock { margin: 0 0 var(--sp-4); }
+.codeblock { margin: 1.5em 0; }
 .codeblock pre { margin-bottom: var(--sp-2); }
+
+/* 입력과 출력을 한눈에 가른다 — 입력은 파란 세로줄, 출력은 무채색 + 물린 잉크.
+ * 딱지는 .panel-title 이 아니다(그건 목차가 긁어 간다). */
+.out-label {
+  font-size: .7rem; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--ink-muted);
+  margin: 1rem 0 .35rem;
+}
+pre.out {
+  border-left-color: var(--axis);
+  background: transparent;
+  color: var(--ink-2);
+}
 .code-actions {
   display: flex;
   align-items: center;
@@ -319,14 +360,16 @@ pre code { background: none; padding: 0; }
   border-left: 3px solid var(--axis);
   background: var(--surface-sunken);
   border-radius: var(--radius-sm);
-  padding: .7rem .95rem;
+  padding: .9rem 1.15rem;
   color: var(--ink-2);
   font-size: .95rem;
-  margin: 1.1em 0;
+  line-height: 1.7;
+  margin: 1.5em 0;
 }
 .note-label {
-  display: block; font-weight: 700; font-size: .8rem;
-  letter-spacing: .03em; margin-bottom: .18em;
+  display: block; font-weight: 700; font-size: .78rem;
+  letter-spacing: .06em; color: var(--ink-1);
+  margin-bottom: .35em;
 }
 /* 경고는 색만으로 말하지 않는다 — 아이콘과 라벨이 함께 온다 */
 .note--danger { border-left-color: var(--c-danger); background: var(--c-danger-wash); }
@@ -367,7 +410,7 @@ pre code { background: none; padding: 0; }
 
 /* ─────────────────────────────────────────────── 표 */
 
-.tbl-wrap { overflow-x: auto; margin: 1em 0; }   /* 넓은 표는 자기 안에서 스크롤 */
+.tbl-wrap { overflow-x: auto; margin: 1.5em 0; }   /* 넓은 표는 자기 안에서 스크롤 */
 table.tbl {
   border-collapse: collapse;
   font-size: .88rem;
@@ -375,7 +418,7 @@ table.tbl {
   width: 100%;
 }
 table.tbl th, table.tbl td {
-  padding: .42rem .6rem;
+  padding: .52rem .75rem;
   text-align: right;
   border-bottom: 1px solid var(--grid);
   white-space: nowrap;
@@ -527,17 +570,18 @@ input[type="text"], input[type="number"], select {
 .quiz { counter-reset: qn; }
 .q { border-top: 1px solid var(--grid); padding: 1rem 0 .4rem; }
 .q:first-child { border-top: 0; padding-top: 0; }
-.q-stem { font-weight: 600; margin: 0 0 .6rem; }
+.q-stem { font-weight: 600; line-height: 1.62; margin: 0 0 .85rem; }
 .q-stem::before {
   counter-increment: qn; content: "Q" counter(qn) ". ";
   color: var(--s1); font-family: var(--font-mono);
 }
-.q-choices { display: flex; flex-direction: column; gap: .35rem; margin: 0 0 .5rem; }
+.q-choices { display: flex; flex-direction: column; gap: .45rem; margin: 0 0 .6rem; }
 .q-choice {
-  display: flex; gap: .55rem; align-items: flex-start;
+  display: flex; gap: .7rem; align-items: flex-start;
   border: 1px solid var(--border); background: var(--surface-2);
-  border-radius: var(--radius-sm); padding: .45rem .7rem; cursor: pointer;
-  font-size: .93rem; font-weight: 400; text-align: left; color: var(--ink-1);
+  border-radius: var(--radius-sm); padding: .6rem .9rem; cursor: pointer;
+  font-size: .93rem; font-weight: 400; line-height: 1.6;
+  text-align: left; color: var(--ink-1);
 }
 .q-choice:hover { border-color: var(--s1); background: var(--surface-2); }
 .q-choice .mk { font-family: var(--font-mono); color: var(--ink-muted); flex: none; font-weight: 700; }
@@ -546,9 +590,9 @@ input[type="text"], input[type="number"], select {
 .q-choice[data-state="right"] .mk { color: var(--success-text); }
 .q-choice[data-state="wrong"] .mk { color: var(--critical); }
 .q-explain {
-  font-size: .9rem; color: var(--ink-2);
+  font-size: .9rem; color: var(--ink-2); line-height: 1.7;
   border-left: 3px solid var(--good); background: var(--surface-2);
-  padding: .55rem .8rem; border-radius: var(--radius-sm); margin: .4rem 0 0;
+  padding: .7rem .95rem; border-radius: var(--radius-sm); margin: .55rem 0 0;
 }
 .q-explain[hidden] { display: none; }
 
@@ -601,16 +645,34 @@ input[type="text"], input[type="number"], select {
 .brand .tag { font-size: .76rem; color: var(--ink-muted); margin-top: .15rem; }
 
 .nav { flex: 1; overflow-y: auto; padding: .6rem .55rem 1.5rem; }
+
+/* 스크롤 막대를 얇게 — 사이드바와 목차는 읽는 곳이지 조작하는 곳이 아니다.
+ * 지원하지 않는 브라우저는 기본 막대를 그대로 쓴다. */
+.nav, .toc, .tbl-wrap, pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--axis) transparent;
+}
+.nav::-webkit-scrollbar, .toc::-webkit-scrollbar,
+.tbl-wrap::-webkit-scrollbar, pre::-webkit-scrollbar { width: 8px; height: 8px; }
+.nav::-webkit-scrollbar-thumb, .toc::-webkit-scrollbar-thumb,
+.tbl-wrap::-webkit-scrollbar-thumb, pre::-webkit-scrollbar-thumb {
+  background: var(--axis); border-radius: 999px;
+}
+.nav::-webkit-scrollbar-track, .toc::-webkit-scrollbar-track,
+.tbl-wrap::-webkit-scrollbar-track, pre::-webkit-scrollbar-track { background: transparent; }
 .nav-group {
   font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
   color: var(--ink-muted); padding: .9rem .65rem .3rem;
 }
+/* 제목이 두 줄이 되면 번호가 가운데로 내려가 어긋나 보인다.
+ * 첫 줄의 글자 밑선에 맞춘다. 점은 따로 세로 가운데. */
 .nav a {
-  display: flex; align-items: center; gap: .55rem;
-  padding: .42rem .65rem; border-radius: var(--radius-sm);
+  display: flex; align-items: baseline; gap: .6rem;
+  padding: .5rem .7rem; border-radius: var(--radius-sm);
   color: var(--ink-2); font-size: .9rem; text-decoration: none;
-  line-height: 1.35;
+  line-height: 1.45;
 }
+.nav a .dot { align-self: center; }
 .nav a:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
 .nav a.on { background: var(--s1-wash); color: var(--s1); font-weight: 650; }
 .nav a .num {
@@ -638,18 +700,19 @@ input[type="text"], input[type="number"], select {
 /* ---------------------------------------------------------------- 본문 */
 
 .main { flex: 1; min-width: 0; }   /* min-width:0 이 있어야 넓은 표가 몸통을 늘리지 않는다 */
-.main-inner { max-width: 900px; margin: 0 auto; padding: 2.2rem 2rem 6rem; }
+.main-inner { max-width: 880px; margin: 0 auto; padding: 3.4rem 2.6rem 8rem; }
 .crumb {
-  font-size: .76rem; color: var(--ink-muted); font-weight: 650;
-  letter-spacing: .06em; text-transform: uppercase; margin-bottom: .4rem;
+  font-size: .74rem; color: var(--ink-muted); font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; margin-bottom: .7rem;
 }
 .chapter-nav {
   display: flex; justify-content: space-between; gap: 1rem;
-  margin-top: 3.5rem; padding-top: 1.2rem; border-top: 1px solid var(--grid-line);
+  margin-top: 5rem; padding-top: 1.8rem; border-top: 1px solid var(--grid-line);
 }
 .chapter-nav a {
   display: block; max-width: 46%; color: var(--ink-2); text-decoration: none;
-  font-size: .9rem; padding: .6rem .9rem; border: 1px solid var(--border);
+  font-size: .9rem; line-height: 1.5; padding: .85rem 1.15rem;
+  border: 1px solid var(--border);
   border-radius: var(--radius); background: var(--surface);
 }
 .chapter-nav a:hover { border-color: var(--s1); color: var(--s1); text-decoration: none; }
@@ -687,29 +750,51 @@ input[type="text"], input[type="number"], select {
   .sidebar.open { transform: none; }
   .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 45; }
   .scrim[hidden] { display: none; }
-  .main-inner { padding: 1.3rem 1.1rem 4rem; }
+  .main-inner { padding: 1.8rem 1.3rem 5rem; }
+  .card { padding: 1.2rem 1.25rem 1.3rem; margin: 1.8em 0; }
 }
 
 /* ---------------------------------------------------------- 홈 화면 */
 
-.hero { padding: 1rem 0 .5rem; }
-.hero h1 { font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.7rem); letter-spacing: -0.022em; }
-.hero .sub { color: var(--ink-2); font-size: 1.06rem; max-width: 46rem; margin-top: .5rem; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .85rem; margin: 1.8rem 0; }
+.hero { padding: 1.5rem 0 1rem; }
+.hero h1 {
+  font-size: clamp(2.3rem, 1.5rem + 3vw, 3.2rem);
+  letter-spacing: -0.035em; line-height: 1.1; margin-bottom: .5rem;
+}
+.hero .sub {
+  color: var(--ink-2); font-size: 1.18rem; line-height: 1.66;
+  max-width: 42rem; margin-top: .9rem;
+}
+.hero .sub.small { font-size: 1.02rem; }
+
+.tiles {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.1rem; margin: 3rem 0 2.4rem;
+}
 .tile {
   display: block; text-decoration: none; color: inherit;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: .9rem 1rem;
+  border-radius: var(--radius); padding: 1.25rem 1.35rem 1.35rem;
+  transition: border-color var(--dur), transform var(--dur);
 }
-.tile:hover { border-color: var(--s1); text-decoration: none; }
-.tile .n { font-family: var(--mono); font-size: .74rem; color: var(--s1); font-weight: 700; }
-.tile .t { font-weight: 650; margin: .12rem 0 .2rem; }
-.tile .d { font-size: .84rem; color: var(--ink-muted); line-height: 1.5; }
-.tile .sim { font-size: .74rem; color: var(--s3); font-weight: 650; margin-top: .35rem; }
+.tile:hover { border-color: var(--s1); text-decoration: none; transform: translateY(-1px); }
+.tile .n {
+  font-family: var(--mono); font-size: .72rem; color: var(--s1);
+  font-weight: 700; letter-spacing: .08em;
+}
+.tile .t {
+  font-weight: 650; font-size: 1.06rem; line-height: 1.4;
+  letter-spacing: var(--tracking-head); margin: .35rem 0 .45rem;
+}
+.tile .d { font-size: .875rem; color: var(--ink-muted); line-height: 1.62; }
+.tile .sim { font-size: .78rem; color: var(--s3); font-weight: 650; line-height: 1.55; margin-top: .7rem; }
 
 /* ★ 표시한 장(가장 많이 틀리는 개념)은 색이 아니라 링과 글자로 구분한다 */
 .tile.key { box-shadow: inset 0 0 0 2px var(--ink-1); }
-.tile .key-mark { font-size: .72rem; font-weight: 700; color: var(--ink-1); }
+.tile .key-mark {
+  font-size: .72rem; font-weight: 700; color: var(--ink-1);
+  letter-spacing: .02em; margin-top: .7rem;
+}
 
 img, svg { max-width: 100%; }
 
@@ -2969,8 +3054,10 @@ img, svg { max-width: 100%; }
     }
 
     if (opts.output !== undefined) {
-      box.appendChild(el('div.panel-title', { text: '출력' }));
-      box.appendChild(el('pre', null, el('code', { text: opts.output })));
+      /* 출력 딱지는 .panel-title 이 아니다 — 그건 카드 소제목이고 오른쪽 목차가 긁어 간다.
+       * 목차가 "출력" 으로 도배되면 목차가 쓸모없어진다. */
+      box.appendChild(el('div.out-label', { text: '출력' }));
+      box.appendChild(el('pre.out', null, el('code', { text: opts.output })));
     }
     return box;
   }

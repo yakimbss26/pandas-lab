@@ -41,6 +41,17 @@ var FAVICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' view
   "font-family='monospace' font-size='15' font-weight='bold' fill='white' " +
   "text-anchor='middle'%3Epd%3C/text%3E%3C/svg%3E";
 
+/* 본문 서체 Pretendard (SIL OFL 1.1). 한글 자소가 고르게 서서 긴 글이 덜 피곤하다.
+ * ★ 없어도 동작해야 한다 — 받지 못하면 theme.css 의 --font-sans 폴백(system-ui)으로
+ *   조용히 내려간다. 그래서 단일 파일 배포본을 file:// 로 열어도, 학교망이 CDN 을 막아도
+ *   글자만 달라질 뿐 화면은 그대로다. 버전을 고정해 두었다(§11 CDN 정책).
+ * 동적 서브셋이라 화면에 나온 글자만 내려받는다. */
+var FONT_LINKS = [
+  '  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>',
+  '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9' +
+    '/dist/web/variable/pretendardvariable-dynamic-subset.css">'
+].join('\n');
+
 // ─────────────────────────────────────────────── CSV 읽기
 
 /* 따옴표로 감싼 필드를 처리한다(타이타닉 Name 에 쉼표가 들어 있다). */
@@ -396,6 +407,7 @@ function buildIndex(mods) {
     '  <title>' + PAGE_TITLE + '</title>',
     '  <meta name="description" content="' + PAGE_DESC + '">',
     '  <link rel="icon" href="' + FAVICON + '">',
+    FONT_LINKS,
     links,
     '</head>',
     '<body>',
@@ -438,6 +450,7 @@ function buildSingle(mods) {
     '  <title>' + PAGE_TITLE + ' (단일 파일)</title>',
     '  <meta name="description" content="' + PAGE_DESC + '">',
     '  <link rel="icon" href="' + FAVICON + '">',
+    FONT_LINKS,
     '  <style>',
     css,
     '  </style>',

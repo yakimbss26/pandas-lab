@@ -648,8 +648,10 @@
     }
 
     if (opts.output !== undefined) {
-      box.appendChild(el('div.panel-title', { text: '출력' }));
-      box.appendChild(el('pre', null, el('code', { text: opts.output })));
+      /* 출력 딱지는 .panel-title 이 아니다 — 그건 카드 소제목이고 오른쪽 목차가 긁어 간다.
+       * 목차가 "출력" 으로 도배되면 목차가 쓸모없어진다. */
+      box.appendChild(el('div.out-label', { text: '출력' }));
+      box.appendChild(el('pre.out', null, el('code', { text: opts.output })));
     }
     return box;
   }

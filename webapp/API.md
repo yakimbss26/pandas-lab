@@ -91,10 +91,11 @@ render: function (root) {
 - **값·라벨 텍스트에 계열색을 입히지 마라.** 잉크 토큰(`--ink-1`, `--ink-2`)만 쓴다.
 - 색 옆에는 항상 글자가 온다. 색 단독으로 의미를 전달하지 않는다.
 
-> **★ 이 앱의 생김새는 NumPy Lab 과 한 벌이다.**
-> https://yakimbss26.github.io/numpy-lab/ 과 표면·잉크·형태 값이 같고, 셸(사이드바·홈 화면·
+> **★ 이 앱의 셸은 NumPy Lab 과 한 벌이다.**
+> https://yakimbss26.github.io/numpy-lab/ 과 역할색·표면·잉크 값이 같고, 셸(사이드바·홈 화면·
 > 이전/다음·오른쪽 목차)도 같다. 학생이 두 사이트를 한 학기에 함께 쓰므로 **같은 자리를 눌러야
 > 한다.** 새 토큰이나 새 셸 구조를 만들지 마라. 아래 별칭으로 이미 양쪽 이름이 통해 있다.
+> (활자·여백만 pandas 쪽이 앞서 다듬어져 있다 — `../CLAUDE.md` §7-2.)
 >
 > | 이 프로젝트 | NumPy Lab 에서 온 이름 |
 > |:---|:---|
@@ -425,6 +426,10 @@ UI.code(src, { title, output, dataset, copyText, noCopy })
 UI.note(message, title)
 UI.danger(label, message)           // ⚠ 아이콘 + 라벨 + 빨강. 경고는 이것만 쓴다
 ```
+
+`title` 은 `.panel-title` 이 되어 **오른쪽 목차에 오른다.** 코드 조각마다 제목을 달면 목차가
+쓸모없어지니, 절 하나에 하나만 단다. `output` 은 `.out-label` + 무채색 블록으로 그려져
+입력 코드(파란 세로줄)와 눈으로 구분된다.
 
 **`UI.code` 는 복사 버튼을 자동으로 붙인다.** 학생이 IDLE 이나 주피터에 붙여 실행하기 때문이다.
 
