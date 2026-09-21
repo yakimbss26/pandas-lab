@@ -129,7 +129,22 @@ function F(name) {
   var f = FX[name];
   var obj = {};
   f.columns.forEach(function (c) { obj[c] = f.data[c]; });
-  return DF.frame(obj, { columns: f.columns });
+  var df = DF.frame(obj, { columns: f.columns });
+  // JS 는 1.0 과 1 을 구분하지 못하므로 실수 열은 fixture 가 dtype 을 실어 보낸다(2부 케이스)
+  if (f.dtypes) df.declareDtypes(f.dtypes);
+  return df;
+}
+
+/* 2부 — .str 메서드 이름을 엔진 호출로 */
+function runStr(sp) {
+  var s = S(sp.src), a = sp.args || [], kw = sp.kwargs || {};
+  switch (sp.method) {
+    case 'split_get': return s.str.split(a[0], { regex: kw.regex }).str.get(a[1]);
+    case 'slice': return s.str.slice(a[0], a[1]);
+    case 'replace': return s.str.replace(a[0], a[1], { regex: kw.regex });
+    case 'split': return s.str.split(a[0], kw);
+    default: return s.str[sp.method].apply(s.str, a);
+  }
 }
 
 // ─────────────────────────────────────────────── 케이스 실행
@@ -236,7 +251,29 @@ var HANDLERS = {
   // 엔진이 DataFrame 산술을 갖게 되어 하네스에서 직접 계산할 필요가 없어졌다.
   frame_binop: function (sp) {
     return { frame: F(sp.left)[sp.op](F(sp.right)) };
-  }
+  },
+
+  // ── 2부 — 문자열 · 날짜 · 모양 · 상관
+  series_str: function (sp) { return { series: runStr(sp) }; },
+  series_str_frame: function (sp) { return { frame: runStr(sp) }; },
+  series_str_dtypes: function (sp) { return { dtypes: runStr(sp).dtypes() }; },
+  series_todatetime: function (sp) { return { series: DF.toDatetime(S(sp.src), { errors: sp.errors }) }; },
+  series_todatetime_values: function (sp) { return { series: DF.toDatetime(sp.values, { errors: sp.errors }) }; },
+  series_dt: function (sp) {
+    return { series: DF.toDatetime(S(sp.src), { errors: sp.errors || 'raise' }).dt[sp.field] };
+  },
+  series_dt_cmp: function (sp) { return { series: DF.toDatetime(S(sp.src))[sp.op](sp.value) }; },
+  series_dt_between: function (sp) { return { series: DF.toDatetime(S(sp.src)).between(sp.lo, sp.hi) }; },
+  series_cmp: function (sp) { return { series: S(sp.src)[sp.op](sp.value) }; },
+  series_method: function (sp) { var s = S(sp.src); return { series: s[sp.method].apply(s, sp.args || []) }; },
+  frame_method: function (sp) { return { frame: F(sp.src)[sp.method]() }; },
+  frame_filter: function (sp) { var r = F(sp.src).filter(sp.opts); return { rows: r.nrows(), columns: r.columns }; },
+  frame_melt: function (sp) { return { frame: F(sp.src).melt(sp.opts) }; },
+  frame_melt_dtypes: function (sp) { return { dtypes: F(sp.src).melt(sp.opts).dtypes() }; },
+  frame_pivot_table: function (sp) { return { frame: F(sp.src).pivotTable(sp.opts) }; },
+  frame_pivot_table_dtypes: function (sp) { return { dtypes: F(sp.src).pivotTable(sp.opts).dtypes() }; },
+  frame_pivot: function (sp) { return { frame: F(sp.src).pivot(sp.opts) }; },
+  frame_corr: function (sp) { return { frame: F(sp.src).corr({ numericOnly: sp.numericOnly }) }; }
 };
 
 // ─────────────────────────────────────────────── 실행

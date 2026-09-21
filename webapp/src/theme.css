@@ -48,6 +48,13 @@
   --c-danger-wash: rgba(208, 59, 59, 0.14);
   --c-good-wash: rgba(12, 163, 12, 0.12);
 
+  /* 발산 척도(상관계수 히트맵) — 검증된 기준 팔레트의 slot 8 빨강 ↔ 파랑, 가운데 회색.
+   * 상태색 빨강(--c-danger)과 **다른 값**이다. 에러와 상관계수를 같은 색으로 말하지 않는다.
+   * 음 = 파랑(--c-original), 양 = 빨강(--div-pos). seaborn 의 cmap='coolwarm' 과 같은 방향이라야
+   * 학생이 옆의 코드를 돌렸을 때 같은 색이 나온다(처음엔 반대로 칠해 두었다). */
+  --div-pos: #e34948;
+  --div-mid: #f0efec;
+
   /* 강조는 색이 아니라 링이다 */
   --c-focus-ring: var(--ink-1);
   --focus-ring-width: 2px;
@@ -162,6 +169,8 @@
     --c-result-wash: rgba(25, 158, 112, 0.24);
     --c-danger-wash: rgba(208, 59, 59, 0.22);
     --c-good-wash: rgba(12, 163, 12, 0.16);
+    --div-pos: #e66767;
+    --div-mid: #383835;
 
     /* 다크에서는 3색 모두 3:1 이상이라 relief 가 필요 없다 */
     --relief-required: 0;
@@ -202,6 +211,8 @@
   --c-result-wash: rgba(25, 158, 112, 0.24);
   --c-danger-wash: rgba(208, 59, 59, 0.22);
   --c-good-wash: rgba(12, 163, 12, 0.16);
+  --div-pos: #e66767;
+  --div-mid: #383835;
   --relief-required: 0;
   --seq-ordinal-min: #184f95;
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);

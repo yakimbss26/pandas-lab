@@ -356,7 +356,7 @@ NumPy Lab 의 힘은 `nd.js` 가 NumPy 와 똑같이 `(buffer, shape, strides, o
 | **파이썬** | `C:\Users\user\AppData\Local\Programs\Python\Python313\python.exe` (3.13.12) |
 | `py` / `python` / `python3` | **Microsoft Store 스텁. 쓰지 말 것.** 위 절대 경로를 쓴다 |
 | pandas / numpy | **3.0.5** / 2.5.1 |
-| matplotlib | 3.11.1 (설치함). **seaborn 은 없음** — 원본의 `sns.distplot`/`sns.boxplot` 은 재현 불가 |
+| matplotlib / seaborn | 3.11.1 / **0.13.2** (2부용으로 2026-09-21 설치). 한글 글꼴 `Malgun Gothic` |
 | node / npm | v24.18.0 / 11.16.0 |
 | git / gh | 설치됨 (`C:\Program Files\Git`, `C:\Program Files\GitHub CLI`) |
 | git 저장소 | `main` 브랜치, `origin` = github.com/yakimbss26/pandas-lab (public) |
@@ -436,6 +436,7 @@ gh api -X POST repos/<계정>/<이름>/pages -f "source[branch]=main" -f "source
 | 원본 자료 포함 | **제외.** `수업자료/` 전체를 `.gitignore` |
 | 실습 데이터 | **합성 대체 + USGS 는 실데이터.** 타이타닉·라멘·전복은 구조만 같은 합성 데이터로 바꾸고 **화면에 합성임을 명시**한다. `lab_earthquake.csv` 는 퍼블릭 도메인이라 실데이터를 쓴다 |
 | ML 노트북 범위 | **마지막 1장만.** pandas 14장 + "pandas 에서 머신러닝으로" 1장 |
+| 2부 (2026-09-21) | **데이터 시각화 V1~V6 을 별도 부로.** 머신러닝 추가 없음. 1부는 그대로 |
 
 ---
 
@@ -460,6 +461,27 @@ gh api -X POST repos/<계정>/<이름>/pages -f "source[branch]=main" -f "source
 | 13 | 노트북이 거짓말할 때 — 실행 순서와 상태 | nb06 `titanic.ipynb` (정정표 D-1) |
 | 14 | 종합 실습 + pandas 에서 머신러닝으로 | nb03/nb04 USGS 과제, nb08~nb10 |
 | 부록 | 원본에서 바로잡은 점 | `docs/정정표.md` |
+
+### 2부 · 데이터 시각화 (2026-09-21 추가)
+
+사용자가 `수업자료/` 에 시각화 노트북 3개·교과서 지원자료 PDF 5개·실데이터 4개를 더 넣었다.
+결정: **별도 2부로 나눈다**(1부 1~14장은 그대로, 14장의 ML 절도 그대로), **머신러닝은 넣지 않는다.**
+설계 전체는 `docs/2부-설계.md`, 사실은 `docs/정답표-시각화.md`, 정정은 `docs/정정표-시각화.md`.
+
+| 장 | 제목 | 데이터 | 웹앱 id |
+|--:|:---|:---|:---|
+| V1 | 문자열과 날짜 | 서울 일별 기온 | `v1-strdate` |
+| V2 | 넓은 표와 긴 표 (melt · pivot_table) | 시도 인구 · 서울 기온 | `v2-reshape` |
+| V3 | matplotlib — 그림의 구조 | 서울 연별 기온 | `v3-matplotlib` |
+| V4 | seaborn — 요약해서 그리기 | 서울 일별 기온 | `v4-seaborn` |
+| V5 | 그래프가 거짓말할 때 | 서울 기온 · 시도 인구 | `v5-honest` |
+| V6 | EDA 실습 — 부산 강수량 118년 | 부산 일별 강수 | `v6-eda` |
+
+- **2부 데이터는 합성하지 않은 실데이터다.** 기상청(공공누리 제1유형, 출처 표시)·행안부 통계. `LICENSE` §2-2-1.
+- **교과서 지원자료 PDF 는 주제만 가져왔다.** 문장·그림·예제 구성을 옮기지 않는다(§10 체크리스트 1번과 같은 이유).
+- **교재 삽입**: `pandas.md` 가 정본이므로 다시 합치지 않고 `webapp/book_part2.js` 가 표지 사이에 끼워 넣는다.
+  2부 초고는 `docs/draft/v*.md`, 그림은 검증기가 코드를 실행해 `docs/fig/*.png` 로 만든다(손으로 만들지 않는다).
+- 웹앱: `part: 2` 로 등록, 사이드바 두 그룹, **진도 분모 20장**.
 
 **웹앱에는 장 말고 화면이 하나 더 있다 — "스스로 하기"(`webapp/src/modules/quest.js`).**
 NumPy Lab 의 과제 화면과 같은 형식이고 내용은 pandas 로 새로 썼다.

@@ -4,7 +4,9 @@
 수업자료/
 
 # 교재 파트 초고 — pandas.md 로 합친 뒤에는 필요 없다
-docs/draft/
+docs/draft/*
+# 2부 초고는 정본이다(book_part2.js 가 읽는다). 커밋한다.
+!docs/draft/v*.md
 
 # 교재 검증이 만드는 파일 (to_pickle / to_csv / savefig 예제가 실제로 파일을 쓴다)
 *.pickle

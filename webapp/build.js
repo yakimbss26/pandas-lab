@@ -305,7 +305,126 @@ function buildData() {
     };
   }
 
+  addPart2(sets);
   return sets;
+}
+
+// ─────────────────────────────────────────────── 2부 데이터 (실데이터, 공공누리 제1유형 / 공공 통계)
+//
+// 기상청·행안부 자료는 1부의 타이타닉과 달리 **실데이터를 그대로** 싣는다(docs/수업자료-인벤토리.md §4-1).
+// 서울 일별 기온 4만 행을 JSON 숫자 배열로 담으면 수백 KB 가 늘어나므로 압축한다:
+//   · 값: 정수로 바꾼 뒤(×10, 음수는 오프셋) 90진수 **두 글자**로. 결측은 따로 정한 코드
+//   · 날짜: "시작일 + 연속 일수" 구간(run) 목록. 전쟁 기간처럼 행이 빠진 곳에서 구간이 끊긴다
+// 복원은 data.js 안의 LabData.frame() 이 한다 — 원본 그대로(탭 · 빈 마지막 행 포함)와 정리된 모양 둘 다.
+
+var K2 = (function () {
+  var a = [];
+  for (var c = 35; c <= 126; c++) if (c !== 92) a.push(String.fromCharCode(c));   // '#'~'~', 역슬래시 제외
+  return a.slice(0, 90).join('');
+})();
+var K2_NA = 90 * 90 - 1;
+
+function k2encode(vals, scale, offset) {
+  return vals.map(function (v) {
+    var n = v === null ? K2_NA : Math.round(v * scale) + offset;
+    if (v !== null && (n < 0 || n >= K2_NA)) throw new Error('k2 범위를 벗어났다: ' + v);
+    return K2.charAt(Math.floor(n / 90)) + K2.charAt(n % 90);
+  }).join('');
+}
+
+function readCSVcp949(rel) {
+  var p = path.join(SRC_DATA, rel);
+  if (!fs.existsSync(p)) return null;
+  var text = new TextDecoder('euc-kr').decode(fs.readFileSync(p));    // cp949 (euc-kr 의 확장)
+  return parseCSV(text.replace(/\r\n/g, '\n'));
+}
+
+/* 'YYYY-MM-DD' 날짜 목록 -> [[시작 epoch ms, 연속 일수], ...] */
+function dateRuns(dates) {
+  var runs = [];
+  dates.forEach(function (s) {
+    var ms = Date.parse(s + 'T00:00:00Z');
+    var last = runs[runs.length - 1];
+    if (last && ms === last[0] + last[1] * 86400000) last[1]++;
+    else runs.push([ms, 1]);
+  });
+  return runs;
+}
+
+function numOrNull(s) {
+  if (s === undefined || s === null || String(s).trim() === '') return null;
+  var n = Number(String(s).replace(/,/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function addPart2(sets) {
+  var dir = '데이터시각화';
+
+  // ── 서울 일별 기온
+  var rows = readCSVcp949(path.join(dir, 'seoul_temp_day.csv'));
+  if (rows) {
+    var body = rows.slice(1);
+    var junk = body.filter(function (r) { return r[0].trim() === ''; }).length;
+    var real = body.filter(function (r) { return r[0].trim() !== ''; });
+    var pick = function (i) { return real.map(function (r) { return numOrNull(r[i]); }); };
+    sets.seoul_day = {
+      encoded: {
+        kind: 'kma-day', header: rows[0], station: 108, datePrefix: '\t', junkRows: junk,
+        runs: dateRuns(real.map(function (r) { return r[0].trim(); })),
+        values: { '평균기온': k2encode(pick(2), 10, 400), '최저기온': k2encode(pick(3), 10, 400), '최고기온': k2encode(pick(4), 10, 400) },
+        scale: 10, offset: 400
+      },
+      rows: real.length, synthetic: false,
+      label: '서울 일별 기온 (기상청, 공공누리 제1유형)'
+    };
+  }
+
+  // ── 부산 일별 강수량
+  rows = readCSVcp949(path.join(dir, 'busan_rain_day.csv'));
+  if (rows) {
+    var rb = rows.slice(1).filter(function (r) { return r[0].trim() !== ''; });
+    sets.busan_rain = {
+      encoded: {
+        kind: 'kma-day', header: rows[0], station: 159, datePrefix: '', junkRows: 0,
+        runs: dateRuns(rb.map(function (r) { return r[0].trim(); })),
+        values: { '강수량': k2encode(rb.map(function (r) { return numOrNull(r[2]); }), 10, 0) },
+        scale: 10, offset: 0
+      },
+      rows: rb.length, synthetic: false,
+      label: '부산 일별 강수량 (기상청, 공공누리 제1유형)'
+    };
+  }
+
+  // ── 서울 연별 기온 (작다 — 그대로)
+  rows = readCSVcp949(path.join(dir, '데이터시각화자료', 'seoul_temp.csv'));
+  if (rows) {
+    var yr = rows.slice(1).map(function (r) {
+      var o = {};
+      rows[0].forEach(function (h, i) { o[h] = numOrNull(r[i]); });
+      return o;
+    });
+    sets.seoul_year = {
+      records: yr, synthetic: false, label: '서울 연별 기온 (기상청, 공공누리 제1유형)',
+      dtypes: { '년': 'int64', '지점': 'int64', '평균기온': 'float64', '최저기온': 'float64', '최고기온': 'float64' }
+    };
+  }
+
+  // ── 시도별 연령별 인구 (18 × 310, 정수 — 그대로)
+  rows = readCSVcp949(path.join(dir, '데이터시각화자료', 'korea_pop.csv'));
+  if (rows) {
+    var head = rows[0];
+    var pop = rows.slice(1).map(function (r) {
+      var o = {};
+      head.forEach(function (h, i) { o[h] = i === 0 ? r[i] : numOrNull(r[i]); });
+      return o;
+    });
+    var dts = {};
+    head.forEach(function (h, i) { dts[h] = i === 0 ? 'str' : 'int64'; });
+    sets.korea_pop = {
+      records: pop, synthetic: false, label: '시도별 연령별 인구 2021년 8월 (행정안전부 주민등록 인구통계)',
+      dtypes: dts, thousandsInSource: true
+    };
+  }
 }
 
 /* 레코드 배열 -> 열 기준 저장.
@@ -328,6 +447,10 @@ function writeData(sets) {
   var payload = { synthetic: anySynthetic, sets: {} };
   Object.keys(sets).forEach(function (k) {
     var s = sets[k];
+    if (s.encoded) {                           // 2부 — 압축된 기상청 일별 자료
+      payload.sets[k] = { label: s.label, synthetic: false, rows: s.rows, encoded: s.encoded };
+      return;
+    }
     var col = toColumnar(s.records);
     payload.sets[k] = {
       label: s.label,
@@ -343,7 +466,9 @@ function writeData(sets) {
     '/* data.js — 빌드가 생성한다. 손으로 고치지 마라.',
     ' * 생성: node webapp/build.js --data',
     ' * 합성 데이터는 원본과 구조·결측 패턴·dtype 만 같고 값은 새로 만든 것이다(저작권).',
-    ' * 지진 데이터만 USGS 실데이터다(퍼블릭 도메인).',
+    ' * 지진 데이터는 USGS 실데이터다(퍼블릭 도메인).',
+    ' * 2부의 서울·부산 기온·강수(기상청, 공공누리 제1유형)와 시도 인구(행정안전부)도 실데이터다.',
+    ' * 기상청 일별 자료는 값 하나를 두 글자로 압축해 담았다(build.js 의 k2encode).',
     ' * 저장은 열 기준이다 — 레코드로 담으면 행마다 컬럼 이름이 반복되어 파일이 3배가 된다.',
     ' */',
     '(function () {',
@@ -353,9 +478,55 @@ function writeData(sets) {
     '  /* 이름으로 DataFrame 을 만든다.',
     '   * dtype 을 함께 넘겨야 float 컬럼이 int64 로 잘못 추론되지 않는다',
     '   * (JS 는 1 과 1.0 을 구분하지 못한다 — core/CLAUDE.md 참조). */',
-    '  LabData.frame = function (name) {',
+    '  var K2 = ' + JSON.stringify(K2) + ', K2_NA = ' + K2_NA + ';',
+    '  var _cache = {};',
+    '',
+    '  /* 2부 — 두 글자 압축을 푼다. 결측은 null. */',
+    '  function k2decode(str, scale, offset) {',
+    '    var out = new Array(str.length / 2);',
+    '    for (var i = 0; i < out.length; i++) {',
+    '      var n = K2.indexOf(str.charAt(2 * i)) * 90 + K2.indexOf(str.charAt(2 * i + 1));',
+    '      out[i] = n === K2_NA ? null : Math.round((n - offset)) / scale;',
+    '    }',
+    '    return out;',
+    '  }',
+    '  function runsToMs(runs) {',
+    '    var out = [];',
+    '    runs.forEach(function (r) { for (var k = 0; k < r[1]; k++) out.push(r[0] + k * 86400000); });',
+    '    return out;',
+    '  }',
+    '',
+    '  /* 기상청 일별 자료를 DataFrame 으로.',
+    '   *   raw:true  — CSV 를 read_csv 로 **그대로** 읽은 모양: 날짜는 문자열(서울은 앞에 탭),',
+    '   *               지점은 빈 마지막 행 때문에 float64, 빈 행이 끝에 붙어 있다 (정정표-시각화 D-7)',
+    '   *   raw:false — 정리한 모양: 날짜는 datetime64[us], 지점은 int64, 빈 행 없음 */',
+    '  function kmaFrame(s, raw) {',
+    '    var e = s.encoded, DF = window.DF;',
+    '    var key = (raw ? "raw:" : "") + s.label;',
+    '    if (!_cache[key]) {',
+    '      var ms = runsToMs(e.runs), n = ms.length, cols = {}, names = e.header.slice();',
+    '      cols[names[0]] = raw ? ms.map(function (v) { return e.datePrefix + DF.fmtDate(v); }) : ms;',
+    '      cols[names[1]] = ms.map(function () { return e.station; });',
+    '      names.slice(2).forEach(function (h) { cols[h] = k2decode(e.values[h], e.scale, e.offset); });',
+    '      if (raw) for (var j = 0; j < e.junkRows; j++) names.forEach(function (h, i) {',
+    '        cols[h].push(i === 0 ? e.datePrefix : null);',
+    '      });',
+    '      _cache[key] = { cols: cols, names: names };',
+    '    }',
+    '    var c = _cache[key], obj = {};',
+    '    c.names.forEach(function (h) { obj[h] = c.cols[h]; });',
+    '    var dts = {};',
+    '    dts[c.names[0]] = raw ? "str" : DF.DATETIME;',
+    '    dts[c.names[1]] = raw && e.junkRows ? "float64" : "int64";',
+    '    c.names.slice(2).forEach(function (h) { dts[h] = "float64"; });',
+    '    return DF.frame(obj, { columns: c.names }).declareDtypes(dts);',
+    '  }',
+    '',
+    '  /* 이름으로 DataFrame 을 만든다. opts.raw 는 2부 기상청 자료에만 쓴다. */',
+    '  LabData.frame = function (name, opts) {',
     '    var s = LabData.sets[name];',
     '    if (!s) throw new Error("모르는 데이터: " + name);',
+    '    if (s.encoded) return kmaFrame(s, !!(opts && opts.raw));',
     '    return window.DF.frame(s.data, { columns: s.columns }).declareDtypes(s.dtypes);',
     '  };',
     '',
@@ -484,8 +655,11 @@ function main() {
     } else {
       var n = writeData(sets);
       Object.keys(sets).forEach(function (k) {
-        console.log('  ' + k + ': ' + sets[k].records.length + '행 ' +
-          Object.keys(sets[k].dtypes).length + '열 ' + (sets[k].synthetic ? '(합성)' : '(실데이터)'));
+        var s = sets[k];
+        var rowsN = s.records ? s.records.length : s.rows;
+        var colsN = s.dtypes ? Object.keys(s.dtypes).length : s.encoded.header.length;
+        console.log('  ' + k + ': ' + rowsN + '행 ' + colsN + '열 ' +
+          (s.synthetic ? '(합성)' : s.encoded ? '(실데이터, 압축)' : '(실데이터)'));
       });
       console.log('  -> ' + path.relative(ROOT, DATA_JS) + ' (' + n + ' bytes)');
     }

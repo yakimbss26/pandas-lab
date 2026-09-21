@@ -188,9 +188,63 @@ Lab.register({ id: 'quest', extra: true, navTitle: '과제', title: '…', subti
 교재가 가르치는 값은 합성 데이터에서도 그대로 성립한다:
 `Age` 결측 177, `Cabin` 687, `Embarked` 2, `ramen.Style` 결측 2, `mag > 6` 인 지진 10건.
 
+### 2부 데이터 — **실데이터**다 (합성이 아니다)
+
+| 이름 | 모양 | 원본 파일 | 출처 |
+|:---|:---|:---|:---|
+| **`seoul_day`** | 42,396 × 5 (`raw` 는 42,397) | `seoul_temp_day.csv` | 기상청, 공공누리 제1유형 |
+| **`busan_rain`** | 43,100 × 3 | `busan_rain_day.csv` | 기상청, 공공누리 제1유형 |
+| **`seoul_year`** | 112 × 5 | `seoul_temp.csv` | 기상청 |
+| **`korea_pop`** | 18 × 310 | `korea_pop.csv` | 행정안전부 주민등록 인구통계 |
+
+```js
+LabData.frame('seoul_day')               // 정리한 모양: 날짜 datetime64[us], 지점 int64, 빈 행 없음
+LabData.frame('seoul_day', { raw: true }) // read_csv 로 **그대로** 읽은 모양: 날짜 문자열(앞에 탭),
+                                          //   지점 float64, 맨 끝에 빈 행 하나 (정정표-시각화 D-7)
+LabData.frame('busan_rain')              // 날짜 datetime64[us], 강수량 float64 (결측 27,477)
+LabData.frame('korea_pop')               // 행정구역 str + 숫자 309열 (thousands=',' 로 읽은 모양)
+```
+
+- 값은 전부 [../docs/정답표-시각화.md](../docs/정답표-시각화.md) 와 같다(빌드가 원본 CSV 에서 만들고, 대조를 거쳤다).
+- **`raw: true` 는 V1 청소 실습용이다.** 이 모양에 `DF.toDatetime` 을 바로 걸면 pandas 처럼
+  `ValueError: time data "\t" doesn't match format …` 로 멈춘다 — 그게 맞는 동작이다.
+- **4만 행이다.** 화면이 매번 전체로 무거운 일을 하면 느려진다. 흔한 순서:
+  `var c = LabData.frame('seoul_day'); c.setCol('년', c.col('날짜').dt.year);` 한 번 한 뒤
+  `c.groupby('년')` 이나 `c.mask(...)` 로 줄여서 그린다. 산점도는 **3,000점 이하**로 표본을 뽑는다.
+- `thousands` 를 빼고 읽은 인구 표(쉼표 문자열)가 필요하면 값을 `toLocaleString('en-US')` 로 만들어 보여 준다
+  — 원본 파일이 그 모양이다.
+
 ---
 
 ## 4. `DF` — 미니 DataFrame 엔진
+
+> **2부에서 더한 것** (전부 실제 pandas 3.0.5 와 교차 검증 — `test/cross.test.js`)
+>
+> ```js
+> DF.toDatetime(seriesOrArray, { errors: 'raise' | 'coerce' })   // dtype 'datetime64[us]', 값은 epoch ms
+> s.dt.year / .month / .day / .dayofweek / .dayofyear / .quarter  // int32 (NaT 가 섞이면 float64)
+> s.dt.strftime('%Y-%m')
+> s.str.strip() / lstrip / rstrip / lower / upper / len()
+> s.str.replace(pat, repl, { regex: false })      // 기본은 글자 그대로
+> s.str.contains(pat, { regex: true, case: true }) // 결측은 False
+> s.str.startswith(p) / endswith(p)
+> s.str.slice(a, b) / get(i)                       // .str[a:b], .str[i]
+> s.str.split(pat, { expand: false, regex })       // expand:true -> 열 0, 1, 2 … 의 DataFrame
+> s.str.extract(r'(?P<성별>남|여)_(?P<나이>\d+)세') // 이름 붙은 그룹 -> 열 이름
+> s.ffill() / s.bfill() / s.between(a, b) / s.isin([…])
+> df.ffill() / df.bfill()
+> df.filter({ regex } | { like } | { items })      // 열 이름으로 고르기 (블록 공유)
+> df.melt({ idVars, valueVars, varName, valueName })
+> df.pivotTable({ index, columns, values, aggfunc: 'mean'|'sum'|'count'|'min'|'max'|'median'|'size' })
+>   .cellRows(행라벨, 열라벨)                       // 그 칸에 모인 원래 행 위치들
+> df.pivot({ index, columns, values })            // 같은 칸에 두 행이면 ValueError
+> df.corr({ numericOnly: true })                  // 문자열 열이 있는데 numericOnly 가 아니면 ValueError
+> DF.fmtDate(ms), DF.fmtTyped(v, dtype)           // 날짜 표시
+> ```
+>
+> pandas 와 똑같이 **막는 것**: 숫자 열 `> '2010'`(TypeError), 문자열 열 `> 2010`(TypeError),
+> 문자열 열 `.mean()`(TypeError), 숫자 열 `.str`/`.dt`(AttributeError). 문자열 열 `.sum()` 은 **이어 붙인다**.
+> 날짜 열은 `'2000-01-01'` 같은 문자열과 비교할 수 있다. `setCol` 에 Series 를 넣으면 그 dtype 을 물려받는다.
 
 ### 4.1 만들기
 
@@ -426,6 +480,35 @@ UI.scale([d0, d1], [r0, r1])
 - **`UI.scatter` 의 계열은 3개까지다.** 넘으면 예외를 던진다(팔레트 all-pairs 한계).
 - 이중 y축을 만들지 마라. 스케일이 다르면 차트를 두 개 만든다.
 
+#### 2부 차트
+
+```js
+UI.line([{ name, points: [[x, y], …], color? }, …],     // 계열 3개까지
+        { title, xLabel, yLabel, xFormat, yMin, yMax, zero, markers, highlight: [x…], height })
+UI.columns([{ label, values: […] } 또는 { label, value }, …],
+        { title, yLabel, xLabel, yMin, errorbar: 'ci' | 'sd' | null, showPoints, seed, highlight: [label…] })
+UI.dist([{ label, values: […] }, …],
+        { kind: 'box' | 'violin' | 'strip', overlay: 'strip', title, yLabel, maxPoints: 400, seed })
+UI.heatmap(rowLabels, colLabels, values2d, { scale: 'sequential' | 'diverging', digits, title, rowTitle, colTitle })
+UI.pyramid(labels, left, right, { leftName, rightName, absTicks: true, title, labelEvery })
+UI.fiveNum(values)         // { n, min, q1, median, q3, max, whiskerLo, whiskerHi, outliers }
+UI.bootstrapCI(values, seed, nBoot = 1000, level = 0.95)   // [아래, 위]
+UI.seeded(seed)            // 결정적 난수 함수 (0 ~ 1)
+```
+
+| 위젯 | 무엇을 보여 주나 | 알아 둘 것 |
+|:---|:---|:---|
+| `UI.line` | 시간에 따른 변화 | **y 가 결측이면 선을 끊는다**(이어 그리지 않는다). `highlight` 의 x 는 링 + 굵은 라벨. 마우스를 올리면 세로선과 값 |
+| `UI.columns` | 범주마다 **평균 하나** (seaborn barplot) | `values` 를 주면 막대 = 평균, `showPoints` 면 막대 뒤에 행들, `errorbar:'ci'` 는 부트스트랩 95%(시드 고정). **`yMin > 0` 이면 축이 잘린 막대가 되고 경고 딱지가 붙는다** — V5 의 나쁜 예에서만 쓴다 |
+| `UI.dist` | 분포 | 상자 수염은 1.5·IQR 안의 가장 먼 값까지(matplotlib·seaborn 기본). 표 보기에 다섯 수치 |
+| `UI.heatmap` | 격자의 크기 / 양·음 | 순차는 파랑 하나의 진하기, 발산은 음 파랑 ↔ 회색 ↔ 양 빨강(`-1 ~ 1`, seaborn `coolwarm` 과 같은 방향). **칸마다 숫자**를 쓴다(`digits` 자리 고정 — `1.00`). 결측은 해칭 + NaN |
+| `UI.pyramid` | 두 집단의 나이 분포 | 첫 라벨이 **맨 아래**. `absTicks:false` 는 왼쪽 눈금이 음수로 찍히는 **나쁜 예** |
+
+- **계열 색은 순서가 곧 뜻이다.** 최저기온·최고기온·평균기온을 함께 그릴 때는 이 순서(파랑 · 주황 · 초록)로 넘긴다.
+  한 계열이면 색을 주지 않는다(파랑).
+- 무작위(부트스트랩, 점 흔들기)는 시드가 고정되어 있다. 같은 입력이면 같은 그림이다. 교재의 seaborn 그림과
+  **신뢰구간이 조금 다를 수 있다** — 부트스트랩이라 원래 실행마다 다르다. 화면에 그렇게 적어라.
+
 ### 5.5 컨트롤
 
 ```js
@@ -470,6 +553,9 @@ UI.modal({ title, body: [노드…], onClose })                 // <dialog>. Esc
 - **`dataset:`** 을 주면 `import pandas as pd` 와 `read_csv` 를 **앞에 붙여서** 복사한다.
   화면에는 안 보이고 복사할 때만 들어간다. 그래서 붙이면 바로 돈다.
   값: `'titanic'`(변수 `t`) · `'ramen'`(`ramen`) · `'abalone'`(`df`) · `'earthquake'`(`data`)
+  **2부**: `'seoul_day'`(`df`, 정리 후 + `년`·`월` 열) · `'seoul_year'`(`data`) · `'busan_rain'`(`rain`, + `년`·`월`) ·
+  `'korea_pop'`(`pop`, `thousands=','`). 2부 머리말은 matplotlib·seaborn import 와 **글꼴 두 줄**까지 넣는다 —
+  화면의 코드에는 그 줄들을 다시 쓰지 않아도 된다. 실제 pandas 로 돌려 경고 없이 도는 것을 확인했다.
 - `copyText:` 로 복사 내용을 직접 정할 수 있다(`dataset` 보다 우선).
 - `noCopy: true` 면 버튼을 달지 않는다. 붙여 실행할 코드가 아닐 때만 쓴다
   (예: 언어 동작을 보여주는 조각).
@@ -498,6 +584,11 @@ UI.quiz({
 장마다 **확인 문제 2~4개, 시뮬레이터 최소 2개.**
 
 보기는 `A · B · C` 표식을 단 줄로 쌓인다. 누르면 **정답 자리가 함께 드러나고** 해설이 열린다.
+
+**보기 순서는 `UI.quiz` 가 섞는다**(보기 3개 이상일 때, 문제 글을 씨앗으로 — 다시 와도 같은 순서).
+작성자는 정답을 첫 보기에 두는 버릇이 있어 섞기 전에는 2부 문항 대부분이 A 였다. 그러니
+**보기 글에 "위의 둘 다", "A 와 B" 처럼 다른 보기의 위치를 가리키는 말을 쓰지 마라.**
+순서 자체에 뜻이 있으면(0 · 1 · 2 처럼 크기순) `keepOrder: true`.
 정답·오답은 색만으로 말하지 않는다 — 표식 글자와 테두리가 같이 바뀐다.
 
 **진도**: `render` 안에서 만들어진 순서가 곧 문제 번호다(`ch07-copy:q0`, `q1`, …).
@@ -537,6 +628,27 @@ UI.progress.reset()     // 사이드바의 "장 진도 초기화" 가 부른다
 | `ch14-project` | 14 | 종합 실습 + 머신러닝으로 |
 
 ★ 표시된 3개 장에 가장 많은 공을 들인다. 교재의 해당 장을 먼저 읽고 시뮬레이터를 정하라.
+
+### 2부 — `part: 2` 로 등록한다. 표시 번호는 `V1` ~ `V6`
+
+| id | part | num | 제목 | 파일 |
+|:---|:--:|--:|:---|:---|
+| `v1-strdate` | 2 | 1 | 문자열과 날짜 | `modules/v1-strdate.js` |
+| `v2-reshape` | 2 | 2 | 넓은 표와 긴 표 | `modules/v2-reshape.js` |
+| `v3-matplotlib` | 2 | 3 | matplotlib — 그림의 구조 | `modules/v3-matplotlib.js` |
+| `v4-seaborn` | 2 | 4 | seaborn — 요약해서 그리기 | `modules/v4-seaborn.js` |
+| `v5-honest` | 2 | 5 | 그래프가 거짓말할 때 | `modules/v5-honest.js` |
+| `v6-eda` | 2 | 6 | EDA 실습 — 부산 강수량 118년 | `modules/v6-eda.js` |
+
+```js
+Lab.register({ id: 'v4-seaborn', part: 2, num: 4, title: '…', subtitle: '…', sim: '…', render: render });
+```
+
+장별 시뮬레이터는 [../docs/2부-설계.md](../docs/2부-설계.md) §2 의 "웹앱:" 줄이 정한다. 교재 초고
+`docs/draft/v*.md` 의 같은 장을 먼저 읽고, 교재가 쓴 예제·용어와 맞춘다.
+**브라우저에는 matplotlib·seaborn 이 없다.** 화면은 그 그래프가 "무엇을 계산해서 그리는지" 를 엔진으로
+재현해 보여 준다 — 예: seaborn barplot 은 `UI.columns` 로 평균과 그 뒤의 행들을, histplot 의 bins 는
+`UI.hist` 로. 파이썬 코드는 `UI.code` 로 함께 보여 준다(복사해서 IDLE 에서 돌리면 진짜 그림이 나온다).
 
 ---
 

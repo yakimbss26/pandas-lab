@@ -121,3 +121,44 @@ float 컬럼을 테스트나 데이터에서 만들 때는 **`{ dtype: 'float64'
   이건 버그가 아니라 **재현해야 하는 동작**이다(교재 8장).
 - `Index` 의 라벨 조회 맵을 만들 때 **중복 라벨을 배열로** 담아야 한다. 단일 값으로 담으면
   중복 인덱스 정렬이 조용히 틀린다.
+- **숫자 이름의 열에 dtype 을 선언할 때.** `pivotTable` 의 열(1, 2, …)이나 `split(expand)` 의 열(0, 1, …)은
+  이름이 숫자인데, 선언 표의 키는 객체 규칙상 문자열 `"1"` 이다. `declareDtypes` 가 열 이름을 기준으로
+  `String(c)` 로 찾도록 고쳤다 — 전에는 `indexOf("1")` 로 찾아서 **조용히 빠졌고** 합계 열이 int64 로 나왔다.
+
+## 2부에서 더한 것 — 문자열 · 날짜 · 모양 · 상관 (2026-09-21)
+
+전부 **실제 pandas 3.0.5 로 먼저 동작을 확인한 뒤** 옮겼고, `test/cross.test.js` 가 59건으로 지킨다.
+추측으로 고치지 마라. 바꿔야 하면 `test/gen_expected.py` 에 케이스를 먼저 넣고 pandas 의 답을 본다.
+
+### 확인한 pandas 동작 — 겉보기와 다른 것
+
+| 무엇 | pandas 3.0.5 | 틀리기 쉬운 짐작 |
+|:---|:---|:---|
+| `to_datetime` 결과 dtype | **`datetime64[us]`** | `[ns]` (2.x) |
+| `.dt.year` dtype | **`int32`**, NaT 가 섞이면 float64 | int64 |
+| 탭 붙은 날짜 `'\t1907-10-01'` | 읽는다 | 못 읽는다 |
+| 탭 **하나뿐인** 값이 섞인 열 | **ValueError** — 첫 값에서 `"\t%Y-%m-%d"` 형식을 추정해 엄격히 적용 | NaT |
+| 빈 문자열 `''` | NaT (errors 와 무관) | 에러 |
+| `str.contains` 의 결측 | **False** (bool dtype) | NaN |
+| `str.len()` 에 결측 | float64 | int64 |
+| 문자열 열 `sum()` | **이어 붙인다** `'51,669,7169,550,227'` | 에러 / 0 |
+| 숫자 열 `> '2010'` | `TypeError: Invalid comparison between dtype=int64 and str` | JS 처럼 True |
+| 문자열 열 `> 2010` | `TypeError: '>' not supported between instances of 'str' and 'int'` | 위와 같은 문구 |
+| `==` 로 dtype 이 다른 값 비교 | 에러 없이 전부 False | TypeError |
+| `melt` 행 순서 | 열 하나의 모든 행 → 다음 열 | 행마다 |
+| `pivot_table(aggfunc='sum')` 에서 값이 전부 결측인 칸 | **0.0** (행이 아예 없는 칸은 NaN) | NaN |
+| `pivot_table(aggfunc='count')` 에 빈 칸 | float64 로 올라간다 | int64 |
+| 값이 변하지 않는 열의 `corr` | 그 행·열 **전부 NaN** (대각선도) | 1.0 |
+
+### 알려진 한계 — `DataFrame.toString()` 은 pandas 의 인쇄 모양이 아니다
+
+pandas 는 실수 열 하나를 **같은 자릿수**로 찍고(`10.060000`, `13.896774`), 인덱스·열 이름 줄(`월`, `년`)을 따로 둔다.
+엔진은 값마다 따로 줄여 찍고(`10.06`, `13.896774`) 이름 줄이 없다. 정수·문자열 위주의 작은 표에서는 차이가 없지만
+**실수로 가득한 표(pivot_table 결과 등)를 `UI.code` 의 `output` 으로 싣지 마라** — 학생이 돌린 화면과 달라 보인다.
+그런 표는 `UI.frameTable` 로 보여 준다(V2 에서 실제로 걸려 뺐다).
+
+### 표현 — 날짜는 epoch 밀리초 숫자
+
+날짜 열의 값은 UTC 기준 epoch **밀리초 숫자**이고 dtype 이 `'datetime64[us]'` 다.
+그래서 **dtype 을 모르면 숫자로 보인다.** 표시할 때는 `DF.fmtTyped(v, dtype)` 를,
+열에 넣을 때는 `setCol(name, series)` 로 Series 째 넣는다(dtype 을 물려받는다). 배열로 넣으면 int64 가 된다.

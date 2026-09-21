@@ -384,6 +384,195 @@ add("frame-add-series-axis0", "frame_series_binop",
 # ── 전치
 add("frame-transpose", "frame_transpose", {"src": "f_abc3"}, frame_out(F("f_abc3").T))
 
+# ═══════════════════════════════════════════════════════ 2부 — 문자열 · 날짜 · 모양 · 상관
+#
+# 교재 2부(V1~V6)와 웹앱 V 장이 쓰는 엔진 기능. 엔진은 이 케이스들에 맞춰 만들었다.
+# 날짜 값은 epoch 밀리초(UTC)로 내보낸다 — 엔진이 그렇게 담는다(ser_out_dt).
+
+def ser_out_dt(s):
+    """날짜 Series. 값은 epoch ms, NaT 는 None."""
+    return {
+        "index": [jsonable(x) for x in s.index],
+        "values": [None if pd.isna(x) else int(pd.Timestamp(x).value // 10**6) for x in s],
+        "dtype": str(s.dtype),
+        "name": None if s.name is None else str(s.name),
+    }
+
+
+def dtypes_out(df):
+    return {"dtypes": {str(c): str(t) for c, t in df.dtypes.items()}}
+
+
+FX["s_dates_raw"] = {"values": ["\t1907-10-01", "\t1907-10-02", "\t", None], "index": list(range(4))}
+FX["s_dates"] = {"values": ["1907-10-01", "2024-12-31", "2000-02-29", "1950-06-25"], "index": list(range(4))}
+FX["s_dates_tab"] = {"values": ["	1907-10-01", "	1907-10-02", None], "index": list(range(3))}
+FX["s_dates_stripped"] = {"values": ["1907-10-01", "1907-10-02", "", None], "index": list(range(4))}
+FX["s_dates_na"] = {"values": ["1953-12-01", "", None, "2018-08-01"], "index": list(range(4))}
+FX["s_region"] = {"values": ["서울특별시  (1100000000)", "제주특별자치도  (5000000000)", None], "index": list(range(3))}
+FX["s_popcols"] = {"values": ["2021년08월_남_0세", "2021년08월_여_37세", "2021년08월_남_100세 이상", "행정구역"],
+                   "index": list(range(4))}
+FX["s_strnums"] = {"values": ["51,669,716", "9,550,227"], "index": [0, 1]}
+FX["s_fill"] = {"values": [None, 1.0, None, 3.0, None], "index": list(range(5))}
+FX["s_years_int"] = {"values": [2011, 1999, 2024], "index": [0, 1, 2]}
+FX["s_years_str"] = {"values": ["2011", "1999", "999"], "index": [0, 1, 2]}
+FX["w_pop"] = {"columns": ["시도", "남_0세", "남_1세", "여_0세"],
+               "data": {"시도": ["서울", "부산"], "남_0세": [10, 20], "남_1세": [11, 21], "여_0세": [12, 22]}}
+# (2002, 2) 는 행은 있지만 값이 결측, (2003, 2) 는 행이 아예 없다 — pivot_table 의 두 경우
+FX["f_pv"] = {"columns": ["년", "월", "v"],
+              "data": {"년": [2001, 2001, 2001, 2002, 2002, 2003],
+                       "월": [1, 1, 2, 1, 2, 1],
+                       "v": [1.5, 3.5, 5.25, 2.0, None, 4.0]},
+              "dtypes": {"v": "float64"}}
+FX["f_pv_dup"] = {"columns": ["년", "월", "v"],
+                  "data": {"년": [2001, 2001], "월": [1, 1], "v": [1.5, 2.5]}, "dtypes": {"v": "float64"}}
+FX["f_pv_uniq"] = {"columns": ["년", "월", "v"],
+                   "data": {"년": [2001, 2001, 2002], "월": [1, 2, 1], "v": [1.5, 2.5, 3.5]}, "dtypes": {"v": "float64"}}
+FX["f_corr"] = {"columns": ["a", "b", "k", "s"],
+                "data": {"a": [1.0, 2.0, 3.0, 4.0, None], "b": [2.0, 4.0, 5.0, 9.0, 1.0],
+                         "k": [108, 108, 108, 108, 108], "s": ["x", "y", "z", "w", "v"]},
+                "dtypes": {"a": "float64", "b": "float64"}}
+FX["f_fill"] = {"columns": ["x", "y"], "data": {"x": [None, 1.0, None], "y": [1.0, None, None]},
+                "dtypes": {"x": "float64", "y": "float64"}}
+
+
+def Fd(name):
+    """fixture 의 dtypes 를 반영한 DataFrame (파이썬은 값에서 이미 올바르게 추론한다)."""
+    return F(name)
+
+
+# ── .str
+_str_cases = [
+    ("str-strip", "s_dates_raw", "strip", [], {}),
+    ("str-replace-tab", "s_dates_raw", "replace", ["\t", ""], {"regex": False}),
+    ("str-len-na", "s_dates_raw", "len", [], {}),
+    ("str-len", "s_dates", "len", [], {}),
+    ("str-slice4", "s_dates", "slice", [0, 4], {}),
+    ("str-contains", "s_region", "contains", ["제주"], {}),
+    ("str-startswith", "s_dates", "startswith", ["19"], {}),
+    ("str-split-regex-get0", "s_region", "split_get", [r"\s+\(", 0], {"regex": True}),
+    ("str-lower", "s_popcols", "lower", [], {}),
+]
+for cid, src, meth, args, kw in _str_cases:
+    s = S(src)
+    if meth == "split_get":
+        res = s.str.split(args[0], regex=kw.get("regex")).str[args[1]]
+    elif meth == "slice":
+        res = s.str[args[0]:args[1]]
+    else:
+        res = getattr(s.str, meth)(*args, **kw)
+    add(cid, "series_str", {"src": src, "method": meth, "args": args, "kwargs": kw}, ser_out(res))
+
+add("str-split-expand", "series_str_frame", {"src": "s_dates", "method": "split", "args": ["-"], "kwargs": {"expand": True}},
+    frame_out(S("s_dates").str.split("-", expand=True)))
+add("str-split-expand-na", "series_str_frame", {"src": "s_dates_stripped", "method": "split", "args": ["-"], "kwargs": {"expand": True}},
+    frame_out(S("s_dates_stripped").str.split("-", expand=True)), "빈 문자열 행은 첫 칸만 빈 문자열, 결측 행은 전부 결측")
+add("str-extract-named", "series_str_frame",
+    {"src": "s_popcols", "method": "extract", "args": [r"_(?P<성별>남|여)_(?P<나이>\d+)세"], "kwargs": {}},
+    frame_out(S("s_popcols").str.extract(r"_(?P<성별>남|여)_(?P<나이>\d+)세")))
+add("str-extract-dtypes", "series_str_dtypes",
+    {"src": "s_popcols", "method": "extract", "args": [r"_(남|여)_(\d+)세"], "kwargs": {}},
+    dtypes_out(S("s_popcols").str.extract(r"_(남|여)_(\d+)세")))
+add("str-sum-concat", "series_agg", {"src": "s_strnums", "agg": "sum"}, {"value": S("s_strnums").sum()},
+    "쉼표 숫자 문자열의 sum 은 이어 붙인다 (정정표-시각화 D-8)")
+
+# ── 날짜
+# 탭이 붙은 날짜는 읽는다. 그러나 탭 **하나뿐인** 값이 섞이면 멈춘다 — 첫 값에서 "	%Y-%m-%d" 형식을
+# 추정해 엄격하게 적용하기 때문이다(정정표-시각화 D-7). 서울 파일의 빈 마지막 행이 이 경우다.
+add("dt-to-datetime-tab", "series_todatetime", {"src": "s_dates_tab", "errors": "raise"},
+    ser_out_dt(pd.to_datetime(S("s_dates_tab"))), "탭이 붙어 있어도 읽는다")
+try:
+    pd.to_datetime(S("s_dates_raw"))
+    add("dt-to-datetime-blank-raises", "series_todatetime", {"src": "s_dates_raw", "errors": "raise"}, {"value": "no-error"})
+except Exception as e:                                           # noqa: BLE001
+    add("dt-to-datetime-blank-raises", "series_todatetime", {"src": "s_dates_raw", "errors": "raise"},
+        {"error": type(e).__name__})
+add("dt-to-datetime-blank-coerce", "series_todatetime", {"src": "s_dates_raw", "errors": "coerce"},
+    ser_out_dt(pd.to_datetime(S("s_dates_raw"), errors="coerce")))
+add("dt-to-datetime-stripped", "series_todatetime", {"src": "s_dates_stripped", "errors": "raise"},
+    ser_out_dt(pd.to_datetime(S("s_dates_stripped"))), "빈 문자열은 NaT")
+add("dt-to-datetime", "series_todatetime", {"src": "s_dates", "errors": "raise"}, ser_out_dt(pd.to_datetime(S("s_dates"))))
+add("dt-to-datetime-na", "series_todatetime", {"src": "s_dates_na", "errors": "coerce"},
+    ser_out_dt(pd.to_datetime(S("s_dates_na"), errors="coerce")))
+for field in ["year", "month", "day", "dayofweek", "dayofyear", "quarter"]:
+    add("dt-" + field, "series_dt", {"src": "s_dates", "field": field},
+        ser_out(getattr(pd.to_datetime(S("s_dates")).dt, field)))
+add("dt-year-nat", "series_dt", {"src": "s_dates_na", "field": "year", "errors": "coerce"},
+    ser_out(pd.to_datetime(S("s_dates_na"), errors="coerce").dt.year), "NaT 가 섞이면 float64")
+_d = pd.to_datetime(S("s_dates"))
+add("dt-cmp-str", "series_dt_cmp", {"src": "s_dates", "op": "ge", "value": "2000-01-01"}, ser_out(_d >= "2000-01-01"))
+add("dt-between", "series_dt_between", {"src": "s_dates", "lo": "1950-01-01", "hi": "2000-12-31"},
+    ser_out(_d.between("1950-01-01", "2000-12-31")))
+try:
+    pd.to_datetime(pd.Series(["2024-13-01"]))
+    add("dt-bad-month", "series_todatetime_values", {"values": ["2024-13-01"], "errors": "raise"}, {"value": "no-error"})
+except Exception as e:                                           # noqa: BLE001
+    add("dt-bad-month", "series_todatetime_values", {"values": ["2024-13-01"], "errors": "raise"},
+        {"error": type(e).__name__})
+
+# ── 비교의 dtype 규칙 (정정표-시각화 D-3)
+for cid, src, op, val in [("cmp-int-gt-str", "s_years_int", "gt", "2010"),
+                          ("cmp-str-gt-int", "s_years_str", "gt", 2010),
+                          ("cmp-str-gt-str", "s_years_str", "gt", "2010"),
+                          ("cmp-int-eq-str", "s_years_int", "eq", "2011")]:
+    s = S(src)
+    try:
+        # ★ 딕셔너리로 {"gt": s > val, "eq": s == val}[op] 라고 쓰면 두 식을 **모두** 계산해서
+        #   == 케이스에서도 > 의 TypeError 가 난다(실제로 그렇게 틀렸다). 고른 연산만 계산한다.
+        r = (s > val) if op == "gt" else (s == val)
+        add(cid, "series_cmp", {"src": src, "op": op, "value": val}, ser_out(r))
+    except Exception as e:                                       # noqa: BLE001
+        add(cid, "series_cmp", {"src": src, "op": op, "value": val}, {"error": type(e).__name__})
+
+# ── 결측 채우기 · 범위
+for m in ["ffill", "bfill"]:
+    add("fill-" + m, "series_method", {"src": "s_fill", "method": m, "args": []}, ser_out(getattr(S("s_fill"), m)()))
+    add("frame-fill-" + m, "frame_method", {"src": "f_fill", "method": m}, frame_out(getattr(Fd("f_fill"), m)()))
+add("between", "series_method", {"src": "s_years_int", "method": "between", "args": [1999, 2011]},
+    ser_out(S("s_years_int").between(1999, 2011)))
+add("isin", "series_method", {"src": "s_years_int", "method": "isin", "args": [[1999, 2024]]},
+    ser_out(S("s_years_int").isin([1999, 2024])))
+
+# ── 열 고르기
+add("filter-regex", "frame_filter", {"src": "w_pop", "opts": {"regex": "^남_"}},
+    {"rows": 2, "columns": list(F("w_pop").filter(regex="^남_").columns)})
+add("filter-like", "frame_filter", {"src": "w_pop", "opts": {"like": "0세"}},
+    {"rows": 2, "columns": list(F("w_pop").filter(like="0세").columns)})
+
+# ── melt
+_m = F("w_pop").melt(id_vars="시도", var_name="열", value_name="인구")
+add("melt", "frame_melt", {"src": "w_pop", "opts": {"idVars": "시도", "varName": "열", "valueName": "인구"}}, frame_out(_m))
+add("melt-dtypes", "frame_melt_dtypes", {"src": "w_pop", "opts": {"idVars": "시도", "varName": "열", "valueName": "인구"}},
+    dtypes_out(_m))
+_m2 = F("w_pop").melt(id_vars=["시도"], value_vars=["남_1세", "남_0세"])
+add("melt-valuevars-default-names", "frame_melt",
+    {"src": "w_pop", "opts": {"idVars": ["시도"], "valueVars": ["남_1세", "남_0세"]}}, frame_out(_m2))
+
+# ── pivot_table / pivot
+for agg in ["mean", "sum", "count", "min", "max"]:
+    p = Fd("f_pv").pivot_table(index="년", columns="월", values="v", aggfunc=agg)
+    add("pivot-table-" + agg, "frame_pivot_table",
+        {"src": "f_pv", "opts": {"index": "년", "columns": "월", "values": "v", "aggfunc": agg}}, frame_out(p))
+    add("pivot-table-" + agg + "-dtypes", "frame_pivot_table_dtypes",
+        {"src": "f_pv", "opts": {"index": "년", "columns": "월", "values": "v", "aggfunc": agg}}, dtypes_out(p))
+try:
+    Fd("f_pv_dup").pivot(index="년", columns="월", values="v")
+    add("pivot-dup", "frame_pivot", {"src": "f_pv_dup", "opts": {"index": "년", "columns": "월", "values": "v"}},
+        {"value": "no-error"})
+except Exception as e:                                           # noqa: BLE001
+    add("pivot-dup", "frame_pivot", {"src": "f_pv_dup", "opts": {"index": "년", "columns": "월", "values": "v"}},
+        {"error": type(e).__name__})
+add("pivot-uniq", "frame_pivot", {"src": "f_pv_uniq", "opts": {"index": "년", "columns": "월", "values": "v"}},
+    frame_out(Fd("f_pv_uniq").pivot(index="년", columns="월", values="v")))
+
+# ── corr
+add("corr-numeric-only", "frame_corr", {"src": "f_corr", "numericOnly": True},
+    frame_out(Fd("f_corr").corr(numeric_only=True)), "결측 행은 짝으로 뺀다, 상수 열 k 는 전부 NaN")
+try:
+    Fd("f_corr").corr()
+    add("corr-str-raises", "frame_corr", {"src": "f_corr", "numericOnly": False}, {"value": "no-error"})
+except Exception as e:                                           # noqa: BLE001
+    add("corr-str-raises", "frame_corr", {"src": "f_corr", "numericOnly": False}, {"error": type(e).__name__})
+
 # ─────────────────────────────────────────────────────── 쓰기
 
 payload = {

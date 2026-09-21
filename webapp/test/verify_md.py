@@ -29,6 +29,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 import traceback
 import warnings
 
@@ -38,7 +39,21 @@ SRC_DATA = os.path.join(ROOT, "수업자료")
 DATA_FILES = [
     "train.csv", "test.csv", "gender_submission.csv",
     "ramen-ratings.csv", "abalone.csv", "housing.data", "lab_earthquake.csv",
+    # 2부 — 하위 폴더에 있지만 교재는 "현재 폴더에 있다" 고 가정하므로 평평하게 복사한다
+    os.path.join("데이터시각화", "seoul_temp_day.csv"),
+    os.path.join("데이터시각화", "busan_rain_day.csv"),
+    os.path.join("데이터시각화", "데이터시각화자료", "seoul_temp.csv"),
+    os.path.join("데이터시각화", "데이터시각화자료", "korea_pop.csv"),
 ]
+
+# 2부 그림. `# 그림: 이름` 이 첫 줄에 붙은 블록은 그림을 **실제로 만들어야** 통과한다.
+# `--figs` 를 주면 그 그림을 docs/fig/이름.png 로 저장한다(주지 않으면 확인만 한다).
+#   ★ 매번 저장하지 않는 이유: seaborn 의 신뢰구간은 부트스트랩이라 실행마다 조금 달라서
+#     검증을 돌릴 때마다 PNG 가 바뀌어 저장소가 지저분해진다.
+FIG_DIR = os.path.join(ROOT, "docs", "fig")
+FIG_TAG = re.compile(r"^\s*#\s*그림:\s*([A-Za-z0-9_\-]+)\s*$", re.M)
+IMG_LINK = re.compile(r"!\[[^\]]*\]\((docs/fig/[A-Za-z0-9_\-]+\.png)\)")
+SLOW_SEC = 10.0
 
 FENCE = re.compile(r"^```(\w*)\s*$")
 
@@ -157,7 +172,35 @@ def run_block(code, ns):
     #   · matplotlib Agg 백엔드에서 plt.show() 는 "화면에 못 띄운다" 고 경고한다.
     #     학생의 Jupyter 에서는 그림이 정상으로 나온다.
     caught = [c for c in caught if "FigureCanvasAgg is non-interactive" not in c]
+    #   · 한글 글꼴이 없는 환경에서는 "Glyph ... missing from font" 이 뜬다. 교재는 V3 첫 블록에서
+    #     글꼴을 설정하지만, 파트 초고를 따로 검사하면 그 블록이 없다. 동작과 무관하다.
+    caught = [c for c in caught if "missing from font" not in c and "Glyph" not in c]
     return buf.getvalue(), caught, err
+
+
+def figure_tag(code):
+    m = FIG_TAG.search(code)
+    return m.group(1) if m else None
+
+
+def harvest_figures(tag, save):
+    """이 블록이 연 그림을 확인하고(선택적으로 저장하고) 모두 닫는다.
+    주피터 인라인 백엔드도 칸이 끝나면 그림을 보여 주고 닫는다 — 그와 같게 한다.
+    반환: 저장했거나 확인한 그림 수."""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        return 0
+    nums = plt.get_fignums()
+    n = len(nums)
+    if tag and save and n:
+        os.makedirs(FIG_DIR, exist_ok=True)
+        for i, num in enumerate(nums):
+            name = tag if n == 1 else "%s-%d" % (tag, i + 1)
+            plt.figure(num).savefig(os.path.join(FIG_DIR, name + ".png"), dpi=100,
+                                    bbox_inches="tight", facecolor="white")
+    plt.close("all")
+    return n
 
 
 def norm(s):
@@ -189,7 +232,23 @@ def looks_like_diagram(expected):
           (pandas 는 한국어 컬럼명이 아니면 한글을 출력하지 않는다).
     """
     korean_lines = sum(1 for ln in norm(expected) if re.search(r"[가-힣]", ln))
-    return korean_lines >= 2
+    drawing = re.search(r"[─│┌┐└┘├┤┬┴┼→←↑↓⇒═║]", expected) is not None
+    return korean_lines >= 2 or drawing
+
+
+def token_overlap(expected, got):
+    """기대 출력의 토큰 중 실제 출력에도 있는 비율.
+
+    ★ 2부에서 뚫린 구멍: 위 looks_like_diagram 은 "한글이 두 줄 이상이면 다이어그램" 으로 보는데,
+      2부 데이터는 시도 이름·성별처럼 **실제 pandas 출력에 한글이 많다.** 그래서 틀린 출력
+      (부산특별시 오탈자, 잘못 계산한 평균)이 다이어그램으로 분류되어 대조 없이 통과했다.
+      실제 출력과 토큰이 절반 이상 겹치면 그건 다이어그램이 아니라 **출력**이다 — 그러면 대조한다.
+      손으로 그린 설명 그림은 실제 출력과 토큰이 거의 겹치지 않는다."""
+    et = re.findall(r"\S+", expected)
+    if not et:
+        return 0.0
+    gt = set(re.findall(r"\S+", got))
+    return sum(1 for t in et if t in gt) / float(len(et))
 
 
 def match_with_ellipsis(got_lines, exp_lines):
@@ -228,12 +287,16 @@ def match_with_ellipsis(got_lines, exp_lines):
 
 # ─────────────────────────────────────────────────────── 대조
 
+DIAGRAM_SKIP = "설명 다이어그램으로 판단 — 대조하지 않음"
+
+
 def compare(got, expected_block, inline):
     """(일치여부, 설명). 기대 출력이 없으면 (True, 'no-expectation')."""
     g = norm(got)
     if expected_block is not None:
-        if looks_like_diagram(expected_block):
-            return True, "설명 다이어그램으로 판단 — 대조하지 않음"
+        # 다이어그램 판정은 **대조가 실패했을 때만**, 그리고 실제 출력과 거의 겹치지 않을 때만 인정한다.
+        # (먼저 건너뛰면 한글이 많은 진짜 출력의 오류를 놓친다 — token_overlap 설명 참고)
+        diagram = looks_like_diagram(expected_block) and token_overlap(expected_block, got) < 0.5
         e = norm(expected_block)
         if g == e:
             return True, "출력 일치 (%d줄)" % len(e)
@@ -250,6 +313,8 @@ def compare(got, expected_block, inline):
         # 값이 같고 폭만 다르면 실패가 아니라 경고로 분리한다.
         if strip_display(g) == strip_display(e):
             return "warn", "값은 같고 표 폭·잘림만 다르다"
+        if diagram:
+            return True, DIAGRAM_SKIP
         if ell is False:
             return False, ("`...` 생략을 감안해도 맞지 않는다\n         기대: %s\n         실제: %s"
                            % (" | ".join(e[:3]) or "(없음)", " | ".join(g[:3]) or "(없음)"))
@@ -270,6 +335,7 @@ def compare(got, expected_block, inline):
 # ─────────────────────────────────────────────────────── main
 
 FIX = "--fix" in sys.argv
+SAVE_FIGS = "--figs" in sys.argv   # `# 그림:` 블록의 그림을 docs/fig/ 에 저장한다
 
 
 def apply_fixes(path, fixes):
@@ -319,7 +385,7 @@ def main():
     for f in DATA_FILES:
         p = os.path.join(SRC_DATA, f)
         if os.path.exists(p):
-            shutil.copy2(p, os.path.join(work, f))
+            shutil.copy2(p, os.path.join(work, os.path.basename(f)))
             copied.append(f)
     cwd0 = os.getcwd()
     os.chdir(work)
@@ -327,12 +393,20 @@ def main():
     try:
         import matplotlib
         matplotlib.use("Agg")     # 창을 띄우며 멈추지 않게
+        import matplotlib.pyplot as _plt
+        # 저장하는 그림에 한글이 네모로 찍히지 않게. 교재 V3 의 글꼴 두 줄과 같은 설정이다.
+        # (파트 초고만 따로 검사할 때 그 블록이 없어도 그림이 제대로 나오게 한다)
+        from matplotlib import font_manager as _fm
+        if any("Malgun Gothic" in f.name for f in _fm.fontManager.ttflist):
+            _plt.rc("font", family="Malgun Gothic")
+        _plt.rc("axes", unicode_minus=False)
     except ImportError:
         pass
 
     total = ok = 0
     problems = []
     warnings_list = []
+    slow = []
 
     # ★ 표시 옵션을 건드리지 않는다. **pandas 기본값**이 기준이다.
     #   이유: 교재는 학생이 아무 설정 없이 그대로 따라 실행하는 문서다.
@@ -358,13 +432,30 @@ def main():
         ns = {"__name__": "__교재__"}
         f_ok = f_bad = 0
         file_fixes = []
+        figs_seen = set()
+        f_diag = 0
 
         for b in blocks:
             total += 1
             mark = marker_of(b["code"])
+            t0 = time.time()
             got, warns, err = run_block(b["code"], ns)
+            dt = time.time() - t0
             inline = inline_expected(b["code"])
             where = "%s:%d" % (rel, b["line"])
+
+            # 그림 — 블록이 끝나면 닫는다(주피터와 같게). `# 그림:` 블록은 그림을 만들어야 한다.
+            tag = figure_tag(b["code"])
+            nfig = harvest_figures(tag, SAVE_FIGS and not err)
+            if tag:
+                figs_seen.add(tag)
+                if not err and nfig == 0:
+                    f_bad += 1
+                    problems.append((where, "# 그림: %s 인데 그림이 하나도 없다" % tag,
+                                     b["code"].strip().split("\n")[0]))
+                    continue
+            if dt > SLOW_SEC:
+                slow.append((where, dt, b["code"].strip().split("\n")[0]))
 
             if mark == "fail":
                 # 예외 또는 경고 중 하나라도 있어야 정상
@@ -400,6 +491,8 @@ def main():
             elif good:
                 ok += 1
                 f_ok += 1
+                if why == DIAGRAM_SKIP:
+                    f_diag += 1
             else:
                 f_bad += 1
                 problems.append((where, why, b["code"].strip().split("\n")[0]))
@@ -412,15 +505,30 @@ def main():
             apply_fixes(tgt, file_fixes)
             print("      -> %d개 기대 출력을 실제 출력으로 덮어썼다" % len(file_fixes))
 
+        # 본문이 가리키는 그림이 실제로 있는가. 코드 블록 없이 그림만 걸어 두면 손으로 만든 그림이다.
+        for link in sorted(set(IMG_LINK.findall(text))):
+            name = os.path.splitext(os.path.basename(link))[0]
+            base = name.rsplit("-", 1)[0] if re.search(r"-\d+$", name) else name
+            if base not in figs_seen and name not in figs_seen:
+                problems.append((rel, "그림 링크 %s 에 해당하는 `# 그림:` 블록이 없다" % link, link))
+            elif not os.path.exists(os.path.join(ROOT, link)):
+                problems.append((rel, "그림 파일이 없다: %s  (--figs 로 만든다)" % link, link))
+
         marks = sum(1 for b in blocks if marker_of(b["code"]) == "fail")
         silents = sum(1 for b in blocks if marker_of(b["code"]) == "silent")
         # ★ "기대 출력이 붙은 블록 수" 를 반드시 보여준다.
         #   이 숫자가 갑자기 줄면 대조를 안 하고 있다는 뜻이다(무력화된 검사는 통과처럼 보인다).
         with_exp = sum(1 for b in blocks if b["expected"] is not None)
-        print("  %-30s 블록 %3d  통과 %3d  실패 %3d   (출력대조 %3d, ✗ %d, ⚠ %d)"
-              % (os.path.basename(rel), len(blocks), f_ok, f_bad, with_exp, marks, silents))
+        # ★ 다이어그램으로 건너뛴 수를 보여 준다. 이 수가 크면 대조가 꺼져 있다는 뜻이다.
+        print("  %-30s 블록 %3d  통과 %3d  실패 %3d   (출력대조 %3d, 그중 다이어그램 %d, ✗ %d, ⚠ %d)"
+              % (os.path.basename(rel), len(blocks), f_ok, f_bad, with_exp, f_diag, marks, silents))
 
     print("")
+    if slow:
+        print("  느린 블록 (%d초 초과 — 학생 컴퓨터에서는 더 느리다. 표본을 줄이거나 미리 집계하라):" % SLOW_SEC)
+        for where, sec, first in slow:
+            print("    · %s  %.1f초  %s" % (where, sec, first))
+        print("")
     if warnings_list:
         print("  경고 (실패는 아니다 — 표 폭 차이):")
         for where, why, first in warnings_list:

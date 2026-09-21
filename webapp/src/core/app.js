@@ -53,13 +53,20 @@
    *     subtitle: '한 줄 소개 — 홈 타일과 장 머리에 함께 쓴다',
    *     sim: '참조 카운트 실험실 · 연쇄 할당',   // 홈 타일의 시뮬레이터 요약 (없으면 생략)
    *     key: true,                              // 가장 많이 틀리는 개념 (★)
+   *     part: 2,                                // 2부(데이터 시각화). 표시는 V1~V6. 생략하면 1부
    *     render: function (root) { … }
    *   })
    *
    * extra: true 를 주면 **장이 아닌 화면**이 된다(과제 등).
    *   · 학습 과정 목록·홈 타일 격자·이전/다음 줄에 끼지 않는다
-   *   · 진도 분모(14장)를 늘리지 않는다 — 이게 핵심이다
+   *   · 진도 분모(1부 14 + 2부 6 = 20장)를 늘리지 않는다 — 이게 핵심이다
    *   · 사이드바에 별도 그룹으로, 홈에는 별도 칸으로 붙는다 */
+  /* 장 번호 표시. 2부(part: 2)는 V 를 붙인다 — 1부 번호와 겹치지 않게 (docs/2부-설계.md §0).
+   *   short: 사이드바·이전/다음의 "7" / "V3"
+   *   long : 빵부스러기·타일의 "7장" / "V3" */
+  function label(c) { return (c.part === 2 ? 'V' : '') + c.num; }
+  function longLabel(c) { return c.part === 2 ? 'V' + c.num : c.num + '장'; }
+
   function register(spec) {
     if (!spec || !spec.id) throw new Error('register: id 가 필요하다');
     if (typeof spec.render !== 'function') throw new Error('register: ' + spec.id + ' 에 render 가 없다');
@@ -92,11 +99,16 @@
     nav.appendChild(UI.el('a.home-link', { href: '#/' }, [
       UI.el('span.num', { text: '⌂' }), UI.el('span', { text: '처음 화면' })
     ]));
-    nav.appendChild(UI.el('div.nav-group', { text: '학습 과정' }));
+    var lastPart = null;
     chapters.forEach(function (c) {
+      var part = c.part || 1;
+      if (part !== lastPart) {
+        nav.appendChild(UI.el('div.nav-group', { text: part === 2 ? '2부 · 데이터 시각화' : '1부 · pandas' }));
+        lastPart = part;
+      }
       var dot = UI.el('span.dot');
       var a = UI.el('a', { href: '#/' + c.id, 'data-id': c.id }, [
-        UI.el('span.num', { text: String(c.num) }),
+        UI.el('span.num', { text: label(c) }),
         UI.el('span', { text: c.title }),
         dot
       ]);
@@ -167,12 +179,12 @@
         /* 초록은 그 장의 문제를 **전부** 맞혔을 때만. 하나 맞히고 초록이 되면 점이 거짓말을 한다. */
         var allRight = st.total > 0 && st.correct === st.total;
         d.className = 'dot' + (allRight ? ' done' : (st.visited ? ' seen' : ''));
-        d.title = c.num + '장 — ' + (allRight ? '확인 문제 전부 정답'
+        d.title = longLabel(c) + ' — ' + (allRight ? '확인 문제 전부 정답'
           : st.visited ? '방문함 (문제 ' + st.correct + '/' + (st.total || '?') + ')' : '아직 안 봄');
         if (st.visited) seen++;
         okQ += st.correct;
       });
-      /* 과제 점도 같은 규칙으로 칠하되 **분모에는 넣지 않는다**. 14장은 14장이다. */
+      /* 과제 점도 같은 규칙으로 칠하되 **분모에는 넣지 않는다**. 분모는 장의 수(20)다. */
       extras.forEach(function (c) {
         var link = navLinks[c.id];
         if (!link) return;
@@ -207,17 +219,27 @@
       })
     ]));
 
-    var tiles = UI.el('div.tiles');
+    var tiles = null, tilePart = null;
     chapters.forEach(function (c) {
+      var part = c.part || 1;
+      if (part !== tilePart) {
+        if (tiles) main.appendChild(tiles);
+        main.appendChild(UI.el('h2.h-sec', { text: part === 2 ? '2부 · 데이터 시각화' : '1부 · pandas' }));
+        if (part === 2) main.appendChild(UI.el('p.small.muted', {
+          text: '2부의 데이터는 실제 관측값이다 — 기상청 기상자료개방포털(공공누리 제1유형), 행정안전부 주민등록 인구통계.'
+        }));
+        tiles = UI.el('div.tiles');
+        tilePart = part;
+      }
       tiles.appendChild(UI.el('a.tile' + (c.key ? '.key' : ''), { href: '#/' + c.id }, [
-        UI.el('div.n', { text: c.num + '장' }),
+        UI.el('div.n', { text: longLabel(c) }),
         UI.el('div.t', { text: c.title }),
         UI.el('div.d', { text: c.subtitle || '' }),
         c.sim ? UI.el('div.sim', { text: '▸ ' + c.sim }) : null,
         c.key ? UI.el('div.key-mark', { text: '★ 가장 많이 틀리는 개념' }) : null
       ]));
     });
-    main.appendChild(tiles);
+    if (tiles) main.appendChild(tiles);
 
     /* 과제는 장 격자에 섞지 않고 아래에 따로 세운다. 성격이 다른 화면이다. */
     extras.forEach(function (c) {
@@ -249,7 +271,7 @@
     }
 
     var simRows = chapters.filter(function (c) { return c.sim; }).map(function (c) {
-      return { ch: c.num + '장', t: c.title, s: c.sim };
+      return { ch: longLabel(c), t: c.title, s: c.sim };
     });
     if (simRows.length) {
       main.appendChild(UI.el('h2.h-sec', { text: '이 실습장에 든 시뮬레이터' }));
@@ -302,7 +324,7 @@
 
     mounted = id;
     if (navLinks[id]) navLinks[id].a.classList.add('on');
-    document.title = (spec.extra ? spec.title : spec.num + '. ' + spec.title) +
+    document.title = (spec.extra ? spec.title : label(spec) + '. ' + spec.title) +
       ' · ' + (opts.title || 'Pandas Lab');
 
     /* 과제에서 장으로 건너온 참이면 돌아가는 줄을 맨 위에 둔다.
@@ -319,10 +341,14 @@
       }
     }
 
-    main.appendChild(UI.el('div.crumb', { text: spec.extra ? '스스로 하기' : spec.num + '장' }));
+    main.appendChild(UI.el('div.crumb', { text: spec.extra ? '스스로 하기' : longLabel(spec) }));
     main.appendChild(UI.el('h1.h-chapter', { text: spec.title }));
     if (spec.subtitle) main.appendChild(UI.el('p.lede', { text: spec.subtitle }));
-    if (!spec.extra && window.LabData && window.LabData.synthetic) {
+    if (spec.part === 2) {
+      main.appendChild(UI.el('p.small.muted', {
+        text: '이 장의 데이터는 실제 관측값이다 — 기상청 기상자료개방포털(공공누리 제1유형) · 행정안전부 주민등록 인구통계.'
+      }));
+    } else if (!spec.extra && window.LabData && window.LabData.synthetic) {
       main.appendChild(UI.el('p.small.muted', {
         text: '실습 데이터는 원본과 구조만 같은 합성 데이터다(지진 데이터는 USGS 실데이터).'
       }));
@@ -362,14 +388,14 @@
       var p = chapters[i - 1];
       box.appendChild(UI.el('a', { href: '#/' + p.id }, [
         UI.el('span.k', { text: '← 이전' }),
-        UI.el('span', { text: p.num + '. ' + p.title })
+        UI.el('span', { text: label(p) + '. ' + p.title })
       ]));
     }
     if (i < chapters.length - 1) {
       var n = chapters[i + 1];
       box.appendChild(UI.el('a.next', { href: '#/' + n.id }, [
         UI.el('span.k', { text: '다음 →' }),
-        UI.el('span', { text: n.num + '. ' + n.title })
+        UI.el('span', { text: label(n) + '. ' + n.title })
       ]));
     }
     return box;
@@ -431,7 +457,7 @@
 
     chapters.sort(function (a, b) {
       var an = a.num === undefined ? 999 : a.num, bn = b.num === undefined ? 999 : b.num;
-      return an - bn || (a.id < b.id ? -1 : 1);
+      return ((a.part || 1) - (b.part || 1)) || an - bn || (a.id < b.id ? -1 : 1);
     });
 
     applyTheme();

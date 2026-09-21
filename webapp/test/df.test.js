@@ -570,6 +570,65 @@ group('표시');
   eq(DF.fmt(1.5), '1.5', '실수 표시');
 }
 
+// ═══════════════════════════════════════════════════════ 2부 — 교차 검증이 못 보는 것
+// 값은 cross.test.js 가 실제 pandas 와 대조한다. 여기서는 에러 문구·표시·dtype 전파를 본다.
+// 문구는 실제 pandas 3.0.5 에서 확인한 것이다 [probe].
+
+function throwsWith(fn, text, label) {
+  try { fn(); } catch (e) { ok(String(e.message).indexOf(text) !== -1, label + ' — 문구: ' + e.message); return; }
+  failed++; failures.push(current + ' :: ' + label + ' — 던지지 않았다');
+}
+
+group('2부 날짜 — 표시와 에러');
+{
+  var d = DF.toDatetime(['1907-10-01', '', '2024-12-31']);
+  eq(d.dtype, 'datetime64[us]', 'dtype 은 [us] (pandas 3.0) [probe]');
+  ok(d.toString().indexOf('1907-10-01') !== -1, '날짜로 표시된다 (epoch 숫자가 아니다)');
+  ok(d.toString().indexOf('NaT') !== -1, '빈 문자열은 NaT 로 표시');
+  throwsWith(function () { DF.toDatetime(['\t1907-10-01', '\t']); }, "doesn't match format", '탭뿐인 값 -> 형식 불일치 [probe]');
+  throwsWith(function () { DF.toDatetime(['2024-13-01']); }, 'month must be in 1..12', '13월 [probe]');
+  throwsWith(function () { DF.toDatetime(['hello']); }, 'Unknown datetime string format', '날짜가 아닌 글자 [probe]');
+  eq(DF.toDatetime(['\t1907-10-01', '\t'], { errors: 'coerce' }).toArray()[1], null, "coerce 면 NaT");
+  throwsWith(function () { return DF.series([1, 2]).dt; }, 'Can only use .dt accessor', '숫자 열의 .dt');
+}
+
+group('2부 날짜 — 열로 넣어도 날짜로 남는다');
+{
+  var f = DF.frame({ 날짜: ['1907-10-01', '1907-10-02'] });
+  f.setCol('날짜', DF.toDatetime(f.col('날짜')));
+  eq(f.col('날짜').dtype, 'datetime64[us]', 'setCol 이 Series 의 dtype 을 물려받는다');
+  f.setCol('년', f.col('날짜').dt.year);
+  eq(f.col('년').dtype, 'int32', '.dt.year 는 int32 [probe]');
+  eq(f.head(1).col('날짜').dtype, 'datetime64[us]', '파생 프레임에도 이어진다');
+  ok(f.toString().indexOf('1907-10-02') !== -1, 'DataFrame 표시도 날짜');
+  eq(f.col('날짜').ge('1907-10-02').toArray(), [false, true], '날짜 열과 문자열 비교');
+}
+
+group('2부 비교의 dtype 규칙 (정정표-시각화 D-3)');
+{
+  throwsWith(function () { DF.series([2011, 1999]).gt('2010'); }, 'Invalid comparison between dtype=int64 and str', '숫자 열 > 문자열 [probe]');
+  throwsWith(function () { DF.series(['2011', '1999']).gt(2010); }, "'>' not supported between instances of 'str' and 'int'", '문자열 열 > 숫자 [probe]');
+  eq(DF.series(['2011', '1999', '999']).gt('2010').toArray(), [true, false, true], "'999' > '2010' 은 True — 문자열 비교 [probe]");
+  eq(DF.series([2011]).eq('2011').toArray(), [false], '== 는 막지 않는다 (전부 False) [probe]');
+}
+
+group('2부 .str');
+{
+  throwsWith(function () { return DF.series([1, 2]).str; }, 'Can only use .str accessor with string values', '숫자 열의 .str [probe]');
+  eq(DF.series(['51,669,716', '9,550,227']).sum(), '51,669,7169,550,227', '문자열 sum 은 이어 붙인다 [probe]');
+  throwsWith(function () { DF.series(['a', 'b']).mean(); }, "Cannot perform reduction 'mean' with string dtype", '문자열 mean [probe]');
+}
+
+group('2부 pivot_table — 칸마다 모인 행');
+{
+  var pv = DF.frame({ 년: [2001, 2001, 2002], 월: [1, 1, 1], v: [1, 3, 5] }).pivotTable({ index: '년', columns: '월', values: 'v' });
+  eq(pv.cellRows(2001, 1), [0, 1], '(2001, 1) 칸에는 0, 1 번 행이 모였다');
+  eq(pv.cellRows(2003, 1), [], '없는 칸은 빈 배열');
+  eq(pv.columnsName, '월', '열 이름표');
+  throwsWith(function () { DF.frame({ 년: [1, 1], 월: [1, 1], v: [1, 2] }).pivot({ index: '년', columns: '월', values: 'v' }); },
+    'Index contains duplicate entries, cannot reshape', 'pivot 중복 [probe]');
+}
+
 // ─────────────────────────────────────────────────────── 결과
 
 console.log('');

@@ -37,7 +37,8 @@
   }
 
   // 장 번호가 비거나 겹치는지
-  var nums = chapters.map(function (c) { return c.num; });
+  // 2부(V1~V6)는 번호 1~6 을 다시 쓴다 — (부, 번호) 로 겹침을 본다
+  var nums = chapters.map(function (c) { return (c.part === 2 ? 'V' : '') + c.num; });
   nums.forEach(function (n, i) {
     if (nums.indexOf(n) !== i) fail('장 번호 중복: ' + n);
   });

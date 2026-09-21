@@ -91,7 +91,13 @@
     return sawNA ? 'float64' : 'object';            // 전부 결측이면 float64
   }
 
-  function isNumericDtype(dt) { return dt === 'int64' || dt === 'float64'; }
+  /* int32 는 `.dt.year` · `.dt.month` 가 돌려주는 dtype 이다(실제 pandas 3.0.5 확인). */
+  function isNumericDtype(dt) { return dt === 'int64' || dt === 'float64' || dt === 'int32'; }
+
+  /* 날짜 dtype. pandas 3.0 의 to_datetime 은 문자열에서 `datetime64[us]` 를 만든다
+   * (2.x 의 `[ns]` 가 아니다 — 실제 확인). 엔진은 값을 UTC 기준 epoch 밀리초 숫자로 담는다. */
+  var DATETIME = 'datetime64[us]';
+  function isDatetimeDtype(dt) { return typeof dt === 'string' && dt.indexOf('datetime64') === 0; }
 
   /* ★ `str` dtype 은 대입에 엄격하다 (실제 pandas 3.0.5 확인, 정정표 C-7).
    *   Series.loc[0] = 0        -> TypeError
@@ -119,7 +125,10 @@
     if (a === b) return a;
     if (a === 'object' || b === 'object') return 'object';
     var an = isNumericDtype(a), bn = isNumericDtype(b);
-    if (an && bn) return (a === 'float64' || b === 'float64') ? 'float64' : 'int64';
+    if (an && bn) {
+      if (a === 'float64' || b === 'float64') return 'float64';
+      return 'int64';                               // int32 + int64 -> int64
+    }
     return 'object'; // 숫자와 문자열, 숫자와 불린, 문자열과 숫자 …
   }
 
@@ -524,11 +533,26 @@
     }
     return a;
   };
+  /* ★ 문자열 열의 sum 은 **이어 붙인다** (실제 pandas 3.0.5 확인, 정정표-시각화 D-8):
+   *   pd.Series(['51,669,716', '9,550,227']).sum()  ->  '51,669,7169,550,227'
+   *   에러도 경고도 없다. `thousands=','` 를 빼고 읽은 인구 표에서 합계를 내면 이렇게 된다.
+   *   이전에는 문자열을 건너뛰어 0 을 냈다 — pandas 와 다르고, 교재의 ⚠ 예제를 재현하지 못한다. */
   Series.prototype.sum = function () {
+    if (this.dtype === 'str') {
+      var s = '';
+      for (var i = 0; i < this.length(); i++) if (!isNA(this.at(i))) s += this.at(i);
+      return s;
+    }
     this._requireNumeric();
     return this._nums().reduce(function (s, v) { return s + v; }, 0);
   };
+  Series.prototype._requireNotStr = function (op) {
+    if (this.dtype === 'str') {
+      throw new Error("TypeError: Cannot perform reduction '" + op + "' with string dtype");
+    }
+  };
   Series.prototype.mean = function () {
+    this._requireNotStr('mean');
     this._requireNumeric();
     var a = this._nums();
     return a.length ? this.sum() / a.length : NA;
@@ -669,10 +693,29 @@
   binop('mul', function (a, b) { return a * b; });
   binop('div', function (a, b) { return a / b; });
 
-  /* 비교 — 불린 Series 를 만든다. 마스크의 재료. */
-  function cmpop(name, fn) {
+  /* 비교 — 불린 Series 를 만든다. 마스크의 재료.
+   *
+   * ★ 크기 비교(>, >=, <, <=)는 dtype 이 맞지 않으면 pandas 가 TypeError 를 낸다
+   *   (실제 확인, 정정표-시각화 D-3):
+   *     숫자 열 > '2010'  ->  TypeError: Invalid comparison between dtype=int64 and str
+   *     문자열 열 > 2010  ->  TypeError: '>' not supported between instances of 'str' and 'int'
+   *   JS 는 2011 > '2010' 을 조용히 true 로 계산하므로, 막지 않으면 엔진이 pandas 보다 너그러워진다.
+   *   같다/다르다(==, !=)는 막지 않는다 — pandas 도 그냥 전부 False 를 준다.
+   * ★ 날짜 열은 '2000-01-01' 같은 문자열과 비교할 수 있다. 문자열을 날짜로 바꿔 비교한다. */
+  function cmpop(name, fn, symbol) {
     Series.prototype[name] = function (other) {
       var isS = other instanceof Series;
+      var dt = this.dtype;
+      if (!isS && isDatetimeDtype(dt) && typeof other === 'string') other = parseDate(other, 'raise');
+      if (symbol && !isS && !isNA(other)) {
+        var otype = typeof other === 'string' ? 'str' : typeof other === 'number' ? (Number.isInteger(other) ? 'int' : 'float') : null;
+        if (isNumericDtype(dt) && otype === 'str') {
+          throw new Error('TypeError: Invalid comparison between dtype=' + dt + ' and str');
+        }
+        if (dt === 'str' && (otype === 'int' || otype === 'float')) {
+          throw new Error("TypeError: '" + symbol + "' not supported between instances of 'str' and '" + otype + "'");
+        }
+      }
       var out = [];
       for (var i = 0; i < this.length(); i++) {
         var lv = this.at(i), rv = isS ? other.at(i) : other;
@@ -681,10 +724,10 @@
       return new Series(out, { index: this.index.copy(), name: this.name, dtype: 'bool' });
     };
   }
-  cmpop('gt', function (a, b) { return a > b; });
-  cmpop('ge', function (a, b) { return a >= b; });
-  cmpop('lt', function (a, b) { return a < b; });
-  cmpop('le', function (a, b) { return a <= b; });
+  cmpop('gt', function (a, b) { return a > b; }, '>');
+  cmpop('ge', function (a, b) { return a >= b; }, '>=');
+  cmpop('lt', function (a, b) { return a < b; }, '<');
+  cmpop('le', function (a, b) { return a <= b; }, '<=');
   cmpop('eq', function (a, b) { return a === b; });
   cmpop('ne', function (a, b) { return a !== b; });
 
@@ -717,9 +760,9 @@
   };
 
   Series.prototype.toString = function () {
-    var lines = [];
+    var lines = [], dt = this.dtype;
     for (var i = 0; i < this.length(); i++) {
-      lines.push(String(this.index.at(i)) + '    ' + fmt(this.at(i)));
+      lines.push(String(this.index.at(i)) + '    ' + fmtTyped(this.at(i), dt));
     }
     if (this.name !== null) lines.push('Name: ' + this.name + ', dtype: ' + this.dtype);
     else lines.push('dtype: ' + this.dtype);
@@ -750,6 +793,13 @@
       return String(Math.round(v * 1e6) / 1e6);
     }
     return String(v);
+  }
+
+  /* dtype 을 아는 표시. 날짜 열의 값은 epoch 밀리초라서 fmt 로는 숫자가 찍힌다.
+   * pandas 처럼 날짜는 '1907-10-01', 결측 날짜는 'NaT' 로. */
+  function fmtTyped(v, dtype) {
+    if (isDatetimeDtype(dtype)) return isNA(v) ? 'NaT' : fmtDate(v);
+    return fmt(v);
   }
 
   // ──────────────────────────────────────────────────────────── DataFrame
@@ -824,8 +874,11 @@
   /* 컬럼별 dtype 을 명시한다. 빌드가 만든 data.js 가 부른다. */
   DataFrame.prototype.declareDtypes = function (map) {
     var self = this;
-    Object.keys(map || {}).forEach(function (n) {
-      if (self.columns.indexOf(n) !== -1) self._dtypes[n] = map[n];
+    map = map || {};
+    // ★ 열 이름을 기준으로 돈다. 열 이름이 숫자(pivot_table 의 1, 2 / split 의 0, 1)이면
+    //   map 의 키는 JSON·객체 규칙상 문자열 "1" 이라 indexOf 로 찾으면 빠진다(실제로 빠졌다).
+    this.columns.forEach(function (c) {
+      if (Object.prototype.hasOwnProperty.call(map, String(c))) self._dtypes[c] = map[String(c)];
     });
     return this;
   };
@@ -880,6 +933,14 @@
     if (name in this._cols) this._cols[name].release();
     else this.columns.push(name);
     delete this._dtypes[name];      // 새 데이터이므로 선언된 dtype 은 무효다
+    /* 단, Series 가 dtype 을 명시하고 왔으면 물려받는다. 날짜 열은 값이 숫자(epoch ms)라서
+     * 물려받지 않으면 int64 로 다시 추론된다 — `df['날짜'] = DF.toDatetime(...)` 가 날짜가 아니게 된다.
+     * 재배치로 결측이 생긴 정수 열은 pandas 처럼 float64 로 올린다. */
+    if (values instanceof Series && values._dtype) {
+      var dt0 = values._dtype;
+      if ((dt0 === 'int64' || dt0 === 'int32') && vals.some(isNA)) dt0 = 'float64';
+      this._dtypes[name] = dt0;
+    }
     this._cols[name] = new ColRef(new Block(vals), null);
     trace.push('setCol', { name: name, block: this._cols[name].block.id });
     return this;
@@ -1529,11 +1590,12 @@
   DataFrame.prototype.toString = function (maxRows) {
     maxRows = maxRows || 10;
     var self = this;
+    var dts = this.dtypes();
     var idxW = Math.max.apply(null, [0].concat(this.index.labels.map(function (l) { return String(l).length; })));
     var widths = this.columns.map(function (n) {
       var w = String(n).length;
       for (var i = 0; i < Math.min(self.nrows(), maxRows); i++) {
-        w = Math.max(w, fmt(self._cols[n].at(i)).length);
+        w = Math.max(w, fmtTyped(self._cols[n].at(i), dts[n]).length);
       }
       return w;
     });
@@ -1541,7 +1603,7 @@
     lines.push(pad('', idxW) + ' ' + this.columns.map(function (n, i) { return pad(String(n), widths[i]); }).join(' '));
     for (var i = 0; i < Math.min(this.nrows(), maxRows); i++) {
       lines.push(pad(String(this.index.at(i)), idxW) + ' ' +
-        this.columns.map(function (n, k) { return pad(fmt(self._cols[n].at(i)), widths[k]); }).join(' '));
+        this.columns.map(function (n, k) { return pad(fmtTyped(self._cols[n].at(i), dts[n]), widths[k]); }).join(' '));
     }
     if (this.nrows() > maxRows) {
       lines.push('...');
@@ -1555,6 +1617,458 @@
     while (s.length < w) s = ' ' + s;
     return s;
   }
+
+  // ════════════════════════════════════════════════════════════ 2부 — 문자열 · 날짜 · 모양 · 상관
+  //
+  // 교재 2부(데이터 시각화)가 쓰는 기능. 전부 실제 pandas 3.0.5 로 동작을 확인하고 옮겼다
+  // (확인 스크립트는 test/gen_expected.py 의 "2부" 케이스 — 교차 검증이 지킨다).
+
+  // ──────────────────────────────────────────────────────────── 날짜
+
+  /* 'YYYY-MM-DD'(구분자 - / .), 'YYYYMMDD', 뒤에 ' HH:MM[:SS]' 까지 읽는다.
+   * 앞뒤 공백·탭은 무시한다 — pandas 도 '\t1907-10-01' 을 그대로 읽는다(실제 확인).
+   * 빈 문자열은 NaT 다(errors 와 무관하게. pandas 도 그렇다).
+   * 못 읽으면 errors='coerce' 면 NaT, 아니면 pandas 와 같은 문구로 던진다. */
+  var DATE_RE = /^(\d{4})[-/.]?(\d{1,2})[-/.]?(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
+  function parseDate(v, errors) {
+    if (isNA(v)) return NA;
+    if (typeof v === 'number') return v;                 // 이미 epoch ms
+    var s = String(v).trim();
+    if (s === '') return NA;
+    var m = DATE_RE.exec(s);
+    var bad = null;
+    if (!m) bad = 'DateParseError: Unknown datetime string format, unable to parse: ' + s;
+    else {
+      var y = +m[1], mo = +m[2], d = +m[3];
+      if (mo < 1 || mo > 12) bad = 'DateParseError: month must be in 1..12: ' + s;
+      else {
+        var ms = Date.UTC(y, mo - 1, d, +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+        var chk = new Date(ms);
+        if (chk.getUTCFullYear() !== y || chk.getUTCMonth() !== mo - 1 || chk.getUTCDate() !== d) {
+          bad = 'DateParseError: day is out of range for month: ' + s;
+        } else return ms;
+      }
+    }
+    if (errors === 'coerce') return NA;
+    throw new Error(bad);
+  }
+
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  /* 자정이면 날짜만, 아니면 시각까지. pandas 의 표시와 같다. */
+  function fmtDate(ms) {
+    var d = new Date(ms);
+    var s = d.getUTCFullYear() + '-' + two(d.getUTCMonth() + 1) + '-' + two(d.getUTCDate());
+    if (d.getUTCHours() || d.getUTCMinutes() || d.getUTCSeconds()) {
+      s += ' ' + two(d.getUTCHours()) + ':' + two(d.getUTCMinutes()) + ':' + two(d.getUTCSeconds());
+    }
+    return s;
+  }
+
+  /* pd.to_datetime(series, errors=...)
+   *
+   * ★ pandas 는 **첫 값에서 형식을 추정**해 나머지에 엄격하게 적용한다(실제 확인, 정정표-시각화 D-7).
+   *   '\t1907-10-01' 이 첫 값이면 형식이 "\t%Y-%m-%d" 가 되어, 탭 붙은 날짜는 다 읽지만
+   *   **탭 하나뿐인 값**에서 멈춘다:
+   *     ValueError: time data "\t" doesn't match format "\t%Y-%m-%d"
+   *   빈 문자열 '' 은 형식과 무관하게 NaT 다. 엔진은 이 두 경우만 재현한다
+   *   (공백뿐인 값 -> 형식 불일치, '' -> NaT). */
+  function toDatetime(src, opts) {
+    opts = opts || {};
+    var errors = opts.errors || 'raise';
+    var s = src instanceof Series ? src : new Series(src);
+    var raw = s.toArray();
+    var lead = '';
+    for (var i = 0; i < raw.length; i++) {
+      if (typeof raw[i] === 'string' && raw[i].trim() !== '') { lead = /^\s*/.exec(raw[i])[0]; break; }
+    }
+    var out = raw.map(function (v) {
+      if (typeof v === 'string' && v !== '' && v.trim() === '') {
+        if (errors === 'coerce') return NA;
+        throw new Error('ValueError: time data "' + v + "\" doesn't match format \"" + lead + '%Y-%m-%d"');
+      }
+      return parseDate(v, errors);
+    });
+    return new Series(out, { index: s.index.copy(), name: s.name, dtype: DATETIME });
+  }
+
+  /* .dt — 날짜 열에서 부분을 뽑는다.
+   * 결과 dtype 은 **int32** (실제 확인). NaT 가 섞이면 float64 로 올라간다.
+   * dayofweek 는 월요일 0 ~ 일요일 6 (pandas 와 같다). */
+  function dtPart(series, fn) {
+    var any = false;
+    var out = series.toArray().map(function (v) {
+      if (isNA(v)) { any = true; return NA; }
+      return fn(new Date(v));
+    });
+    return new Series(out, { index: series.index.copy(), name: series.name, dtype: any ? 'float64' : 'int32' });
+  }
+  function dayOfYear(d) {
+    return Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) -
+      Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000) + 1;
+  }
+  Object.defineProperty(Series.prototype, 'dt', {
+    get: function () {
+      if (!isDatetimeDtype(this.dtype)) {
+        throw new Error('AttributeError: Can only use .dt accessor with datetimelike values');
+      }
+      var s = this;
+      return {
+        get year() { return dtPart(s, function (d) { return d.getUTCFullYear(); }); },
+        get month() { return dtPart(s, function (d) { return d.getUTCMonth() + 1; }); },
+        get day() { return dtPart(s, function (d) { return d.getUTCDate(); }); },
+        get dayofweek() { return dtPart(s, function (d) { return (d.getUTCDay() + 6) % 7; }); },
+        get dayofyear() { return dtPart(s, dayOfYear); },
+        get quarter() { return dtPart(s, function (d) { return Math.floor(d.getUTCMonth() / 3) + 1; }); },
+        /* 표시용 문자열. strftime 전체를 흉내내지 않는다 — %Y %m %d 만 */
+        strftime: function (f) {
+          return new Series(s.toArray().map(function (v) {
+            if (isNA(v)) return NA;
+            var d = new Date(v);
+            return f.replace('%Y', d.getUTCFullYear()).replace('%m', two(d.getUTCMonth() + 1))
+              .replace('%d', two(d.getUTCDate()));
+          }), { index: s.index.copy(), name: s.name, dtype: 'str' });
+        }
+      };
+    }
+  });
+
+  // ──────────────────────────────────────────────────────────── .str
+
+  /* 문자열 열의 도구상자. str / object dtype 에서만 쓸 수 있다.
+   * 결측은 그대로 결측으로 흘려보낸다. 단 contains / startswith / endswith 는 **False** 를 준다 —
+   * pandas 3.0 의 str dtype 이 그렇다(실제 확인). */
+  function strResult(series, fn, dtype) {
+    return new Series(series.toArray().map(function (v) { return isNA(v) ? NA : fn(v); }),
+      { index: series.index.copy(), name: series.name, dtype: dtype });
+  }
+  function boolResult(series, fn) {
+    return new Series(series.toArray().map(function (v) { return isNA(v) ? false : !!fn(String(v)); }),
+      { index: series.index.copy(), name: series.name, dtype: 'bool' });
+  }
+  function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  /* 파이썬 정규식의 이름 붙은 그룹 (?P<이름>…) 을 JS 의 (?<이름>…) 로 */
+  function pyRe(p, flags) { return new RegExp(String(p).replace(/\(\?P</g, '(?<'), flags || ''); }
+
+  function StrAccessor(series) {
+    var dt = series.dtype;
+    if (dt !== 'str' && dt !== 'object') {
+      throw new Error('AttributeError: Can only use .str accessor with string values!');
+    }
+    this._s = series;
+    this._obj = dt === 'object';
+  }
+  StrAccessor.prototype._same = function () { return this._obj ? 'object' : 'str'; };
+  StrAccessor.prototype.strip = function (chars) {
+    if (chars === undefined) return strResult(this._s, function (v) { return String(v).trim(); }, 'str');
+    var re = new RegExp('^[' + escapeRe(chars) + ']+|[' + escapeRe(chars) + ']+$', 'g');
+    return strResult(this._s, function (v) { return String(v).replace(re, ''); }, 'str');
+  };
+  StrAccessor.prototype.lstrip = function () { return strResult(this._s, function (v) { return String(v).replace(/^\s+/, ''); }, 'str'); };
+  StrAccessor.prototype.rstrip = function () { return strResult(this._s, function (v) { return String(v).replace(/\s+$/, ''); }, 'str'); };
+  StrAccessor.prototype.lower = function () { return strResult(this._s, function (v) { return String(v).toLowerCase(); }, 'str'); };
+  StrAccessor.prototype.upper = function () { return strResult(this._s, function (v) { return String(v).toUpperCase(); }, 'str'); };
+  /* replace(pat, repl, {regex}) — pandas 3.0 의 기본은 regex=False (글자 그대로) */
+  StrAccessor.prototype.replace = function (pat, repl, opts) {
+    var re = (opts && opts.regex) ? pyRe(pat, 'g') : new RegExp(escapeRe(pat), 'g');
+    return strResult(this._s, function (v) { return String(v).replace(re, repl); }, 'str');
+  };
+  /* contains(pat, {regex, case}) — 기본 regex=True */
+  StrAccessor.prototype.contains = function (pat, opts) {
+    opts = opts || {};
+    var flags = opts.case === false ? 'i' : '';
+    var re = opts.regex === false ? new RegExp(escapeRe(pat), flags) : pyRe(pat, flags);
+    return boolResult(this._s, function (v) { return re.test(v); });
+  };
+  StrAccessor.prototype.startswith = function (p) { return boolResult(this._s, function (v) { return v.indexOf(p) === 0; }); };
+  StrAccessor.prototype.endswith = function (p) {
+    return boolResult(this._s, function (v) { return v.length >= p.length && v.slice(v.length - p.length) === p; });
+  };
+  /* 길이 — 결측이 있으면 float64, 없으면 int64 (실제 확인) */
+  StrAccessor.prototype.len = function () {
+    var any = this._s.toArray().some(isNA);
+    return strResult(this._s, function (v) { return v.length; }, any ? 'float64' : 'int64');
+  };
+  /* .str[a:b] 와 .str[i]. 리스트가 든 object 열(split 결과)에서는 원소를 꺼낸다. */
+  StrAccessor.prototype.slice = function (start, stop) {
+    return strResult(this._s, function (v) {
+      return Array.isArray(v) ? v.slice(start, stop) : String(v).slice(start === undefined ? 0 : start, stop);
+    }, this._same());
+  };
+  StrAccessor.prototype.get = function (i) {
+    return strResult(this._s, function (v) {
+      var n = v.length, k = i < 0 ? n + i : i;
+      if (k < 0 || k >= n) return NA;
+      return Array.isArray(v) ? v[k] : String(v).charAt(k);
+    }, this._same());
+  };
+  /* split(pat, {expand, regex})
+   *   expand=false -> 리스트가 든 object 열
+   *   expand=true  -> DataFrame. 열 이름은 0, 1, 2 …, dtype 은 str. 짧은 행은 결측으로 채운다
+   *   pat 이 두 글자 이상이면 정규식으로 본다(regex 를 안 줬을 때. pandas 규칙) */
+  StrAccessor.prototype.split = function (pat, opts) {
+    opts = opts || {};
+    var useRe = opts.regex === true || (opts.regex === undefined && pat !== undefined && String(pat).length > 1);
+    var sep = pat === undefined ? /\s+/ : useRe ? pyRe(pat) : String(pat);
+    var parts = this._s.toArray().map(function (v) {
+      if (isNA(v)) return NA;
+      var s = String(v);
+      return pat === undefined ? s.trim().split(sep) : s.split(sep);
+    });
+    if (!opts.expand) {
+      return new Series(parts, { index: this._s.index.copy(), name: this._s.name, dtype: 'object' });
+    }
+    var k = parts.reduce(function (m, p) { return isNA(p) ? m : Math.max(m, p.length); }, 0);
+    var obj = {}, names = [];
+    for (var c = 0; c < k; c++) {
+      names.push(c);
+      obj[c] = parts.map(function (p) { return isNA(p) || c >= p.length ? NA : p[c]; });
+    }
+    var f = DataFrame.fromColumns(obj, { columns: names, index: this._s.index.copy() });
+    var dts = {};
+    names.forEach(function (n) { dts[n] = 'str'; });
+    return f.declareDtypes(dts);
+  };
+  /* extract(regex) -> DataFrame. 열 이름은 이름 붙은 그룹이면 그 이름, 아니면 0, 1, … */
+  StrAccessor.prototype.extract = function (pat) {
+    var re = pyRe(pat);
+    var names = [];
+    var named = /\(\?P?<([^>]+)>/g, m;
+    while ((m = named.exec(String(pat))) !== null) names.push(m[1]);
+    var groupCount = new RegExp(re.source + '|').exec('').length - 1;
+    if (!names.length) for (var g = 0; g < groupCount; g++) names.push(g);
+    var obj = {};
+    names.forEach(function (n) { obj[n] = []; });
+    this._s.toArray().forEach(function (v) {
+      var hit = isNA(v) ? null : re.exec(String(v));
+      names.forEach(function (n, gi) { obj[n].push(hit && hit[gi + 1] !== undefined ? hit[gi + 1] : NA); });
+    });
+    var f = DataFrame.fromColumns(obj, { columns: names, index: this._s.index.copy() });
+    var dts = {};
+    names.forEach(function (n) { dts[n] = 'str'; });
+    return f.declareDtypes(dts);
+  };
+  Object.defineProperty(Series.prototype, 'str', { get: function () { return new StrAccessor(this); } });
+
+  // ──────────────────────────────────────────────────────────── 결측 채우기 · 범위
+
+  /* ffill / bfill — 앞(뒤)의 값으로 채운다. fillna(method=...) 는 pandas 3.0 에서 없어졌다(정정표-시각화 C-1).
+   * 끝에 채울 값이 없으면 결측이 남는다 — 서울 파일의 빈 마지막 행이 그 예다. */
+  function fillDir(arr, forward) {
+    var out = arr.slice(), last = NA;
+    if (forward) for (var i = 0; i < out.length; i++) { if (isNA(out[i])) out[i] = last; else last = out[i]; }
+    else for (var j = out.length - 1; j >= 0; j--) { if (isNA(out[j])) out[j] = last; else last = out[j]; }
+    return out;
+  }
+  Series.prototype.ffill = function () {
+    return new Series(fillDir(this.toArray(), true), { index: this.index.copy(), name: this.name, dtype: this._dtype });
+  };
+  Series.prototype.bfill = function () {
+    return new Series(fillDir(this.toArray(), false), { index: this.index.copy(), name: this.name, dtype: this._dtype });
+  };
+  /* 양 끝 포함 (pandas 기본 inclusive='both') */
+  Series.prototype.between = function (lo, hi) {
+    var dt = this.dtype;
+    if (isDatetimeDtype(dt)) { lo = parseDate(lo, 'raise'); hi = parseDate(hi, 'raise'); }
+    return new Series(this.toArray().map(function (v) { return !isNA(v) && v >= lo && v <= hi; }),
+      { index: this.index.copy(), name: this.name, dtype: 'bool' });
+  };
+  Series.prototype.isin = function (vals) {
+    var set = new Set(vals);
+    return new Series(this.toArray().map(function (v) { return set.has(v); }),
+      { index: this.index.copy(), name: this.name, dtype: 'bool' });
+  };
+
+  function frameFill(frame, forward) {
+    var obj = {};
+    frame.columns.forEach(function (n) { obj[n] = fillDir(frame._cols[n].toArray(), forward); });
+    return frame._inherit(DataFrame.fromColumns(obj, { columns: frame.columns, index: frame.index.copy() }));
+  }
+  DataFrame.prototype.ffill = function () { return frameFill(this, true); };
+  DataFrame.prototype.bfill = function () { return frameFill(this, false); };
+
+  // ──────────────────────────────────────────────────────────── 열 고르기
+
+  /* filter({items | like | regex}) — 열 이름으로 고른다. 블록을 공유한다.
+   * iloc[:, 106:207] 처럼 위치를 박아 두는 대신 이름 규칙으로 고르는 방법(정정표-시각화 D-9). */
+  DataFrame.prototype.filter = function (opts) {
+    opts = opts || {};
+    var names;
+    if (opts.items) names = opts.items.filter(function (n) { return this.columns.indexOf(n) >= 0; }, this);
+    else if (opts.like !== undefined) names = this.columns.filter(function (n) { return String(n).indexOf(opts.like) >= 0; });
+    else if (opts.regex !== undefined) {
+      var re = pyRe(opts.regex);
+      names = this.columns.filter(function (n) { return re.test(String(n)); });
+    } else throw new Error('TypeError: Must pass either `items`, `like`, or `regex`');
+    return this.cols(names);
+  };
+
+  // ──────────────────────────────────────────────────────────── 넓은 표 <-> 긴 표
+
+  /* melt({idVars, valueVars, varName='variable', valueName='value'})
+   * 행 순서는 **열 하나의 모든 행 → 다음 열** 이다(실제 확인). 인덱스는 0 부터 새로 매긴다.
+   * 값 열의 dtype 은 값 열들을 승격시킨 것. */
+  DataFrame.prototype.melt = function (opts) {
+    opts = opts || {};
+    var self = this;
+    var ids = opts.idVars === undefined ? [] : [].concat(opts.idVars);
+    var vars = opts.valueVars === undefined
+      ? this.columns.filter(function (c) { return ids.indexOf(c) < 0; })
+      : [].concat(opts.valueVars);
+    var varName = opts.varName || 'variable', valueName = opts.valueName || 'value';
+    var n = this.nrows(), obj = {}, dts = this.dtypes();
+    ids.forEach(function (c) { obj[c] = []; });
+    obj[varName] = [];
+    obj[valueName] = [];
+    var vdt = null;
+    vars.forEach(function (v) {
+      var col = self._cols[v];
+      if (!col) throw new Error('KeyError: ' + JSON.stringify(v));
+      vdt = vdt === null ? dts[v] : promoteDtype(vdt, dts[v]);
+      for (var i = 0; i < n; i++) {
+        ids.forEach(function (c) { obj[c].push(self._cols[c].at(i)); });
+        obj[varName].push(v);
+        obj[valueName].push(col.at(i));
+      }
+    });
+    var names = ids.concat([varName, valueName]);
+    var out = DataFrame.fromColumns(obj, { columns: names });
+    var decl = {};
+    ids.forEach(function (c) { decl[c] = dts[c]; });
+    decl[varName] = vars.every(function (v) { return typeof v === 'string'; }) ? 'str' : 'object';
+    if (vdt) decl[valueName] = vdt;
+    trace.push('melt', { ids: ids, vars: vars.length, rows: out.nrows() });
+    return out.declareDtypes(decl);
+  };
+
+  /* pivot_table({index, columns, values, aggfunc='mean'})
+   * 칸마다 모인 값을 집계한다. 실제 pandas 3.0.5 와 같게:
+   *   · 행이 하나도 없는 칸은 NaN
+   *   · 행은 있는데 값이 전부 결측인 칸: sum -> 0, count -> 0, mean/min/max -> NaN
+   *   · count 결과에 NaN 이 섞이면 float64, 아니면 int64
+   * 행·열 라벨은 정렬한다. 결측 키는 버린다(groupby 와 같다).
+   * 화면이 "한 칸에 몇 행이 모였나" 를 보여 줄 수 있게 cellRows() 를 붙인다. */
+  function sortedKeys(arr) {
+    var seen = new Map();
+    arr.forEach(function (v) { if (!isNA(v)) seen.set(typeof v + ':' + v, v); });
+    return Array.from(seen.values()).sort(cmpLabel);
+  }
+  DataFrame.prototype.pivotTable = function (opts) {
+    opts = opts || {};
+    var how = opts.aggfunc || 'mean';
+    var ic = this._cols[opts.index], cc = this._cols[opts.columns], vc = this._cols[opts.values];
+    if (!ic) throw new Error('KeyError: ' + JSON.stringify(opts.index));
+    if (!cc) throw new Error('KeyError: ' + JSON.stringify(opts.columns));
+    if (!vc) throw new Error('KeyError: ' + JSON.stringify(opts.values));
+    var rowKeys = sortedKeys(ic.toArray()), colKeys = sortedKeys(cc.toArray());
+    var rpos = new Map(), cpos = new Map();
+    rowKeys.forEach(function (k, i) { rpos.set(typeof k + ':' + k, i); });
+    colKeys.forEach(function (k, i) { cpos.set(typeof k + ':' + k, i); });
+    var cells = rowKeys.map(function () { return colKeys.map(function () { return null; }); });
+    for (var i = 0; i < this.nrows(); i++) {
+      var r = ic.at(i), c = cc.at(i);
+      if (isNA(r) || isNA(c)) continue;
+      var a = rpos.get(typeof r + ':' + r), b = cpos.get(typeof c + ':' + c);
+      (cells[a][b] = cells[a][b] || []).push(i);
+    }
+    var vdt = this.col(opts.values).dtype;
+    var obj = {}, anyMissing = false;
+    colKeys.forEach(function (ck, b) {
+      obj[ck] = rowKeys.map(function (rk, a) {
+        var rows = cells[a][b];
+        if (!rows) { anyMissing = true; return NA; }
+        var vals = rows.map(function (p) { return vc.at(p); }).filter(function (v) { return !isNA(v); });
+        switch (how) {
+          case 'count': return vals.length;
+          case 'sum': return vals.reduce(function (s, v) { return s + v; }, 0);
+          case 'size': return rows.length;
+          case 'mean': return vals.length ? vals.reduce(function (s, v) { return s + v; }, 0) / vals.length : NA;
+          case 'min': return vals.length ? Math.min.apply(null, vals) : NA;
+          case 'max': return vals.length ? Math.max.apply(null, vals) : NA;
+          case 'median': return vals.length ? new Series(vals).median() : NA;
+          case 'first': return vc.at(rows[0]);          // pivot 이 쓴다 — 칸마다 행이 하나뿐이다
+          default: throw new Error('모르는 aggfunc: ' + how);
+        }
+      });
+    });
+    var out = DataFrame.fromColumns(obj, { columns: colKeys, index: new Index(rowKeys, opts.index) });
+    var dt = (how === 'count' || how === 'size') ? (anyMissing ? 'float64' : 'int64')
+      : how === 'sum' ? (vdt === 'float64' || anyMissing ? 'float64' : 'int64')
+      : how === 'first' ? (!anyMissing ? vdt : isNumericDtype(vdt) ? 'float64' : vdt)
+      : (how === 'min' || how === 'max') && vdt !== 'float64' && !anyMissing ? vdt : 'float64';
+    var decl = {};
+    colKeys.forEach(function (k) { decl[k] = dt; });
+    out.declareDtypes(decl);
+    out.columnsName = opts.columns;
+    out.cellRows = function (rk, ck) {
+      var a = rpos.get(typeof rk + ':' + rk), b = cpos.get(typeof ck + ':' + ck);
+      return a === undefined || b === undefined || !cells[a][b] ? [] : cells[a][b].slice();
+    };
+    trace.push('pivot_table', { index: opts.index, columns: opts.columns, aggfunc: how, shape: out.shape });
+    return out;
+  };
+
+  /* pivot({index, columns, values}) — 집계하지 않는다. 같은 칸에 두 행이면 에러(실제 확인 문구). */
+  DataFrame.prototype.pivot = function (opts) {
+    var seen = new Set();
+    var ic = this._cols[opts.index], cc = this._cols[opts.columns];
+    for (var i = 0; i < this.nrows(); i++) {
+      var k = JSON.stringify([ic.at(i), cc.at(i)]);
+      if (seen.has(k)) throw new Error('ValueError: Index contains duplicate entries, cannot reshape');
+      seen.add(k);
+    }
+    // 칸마다 행이 하나뿐임을 위에서 확인했으므로 'first' 가 곧 그 값이다.
+    // dtype 은 원래 값 열을 따른다(빈 칸이 있으면 숫자는 float64 로).
+    return this.pivotTable({ index: opts.index, columns: opts.columns, values: opts.values, aggfunc: 'first' });
+  };
+
+  // ──────────────────────────────────────────────────────────── 상관계수
+
+  /* corr({numericOnly}) — 피어슨. 두 열에서 **둘 다 값이 있는 행만** 쓴다(pandas 와 같다).
+   *   · 문자열 열이 있는데 numericOnly 가 아니면 pandas 와 같은 문구로 던진다(정정표-시각화 C-2)
+   *   · 값이 변하지 않는 열(표준편차 0)은 그 행·열 전체가 NaN — 대각선도 (실제 확인)
+   *   · 쓸 수 있는 행이 2개 미만이어도 NaN */
+  DataFrame.prototype.corr = function (opts) {
+    opts = opts || {};
+    var self = this, dts = this.dtypes();
+    var names = this.columns.filter(function (n) {
+      var dt = dts[n];
+      if (isNumericDtype(dt) || dt === 'bool') return true;
+      if (!opts.numericOnly) {
+        var bad = self._cols[n].toArray().filter(function (v) { return !isNA(v); })[0];
+        throw new Error('ValueError: could not convert string to float: ' +
+          (typeof bad === 'string' ? "'" + bad + "'" : String(bad)));
+      }
+      return false;
+    });
+    var arrs = {};
+    names.forEach(function (n) {
+      arrs[n] = self._cols[n].toArray().map(function (v) { return typeof v === 'boolean' ? (v ? 1 : 0) : v; });
+    });
+    function pearson(x, y) {
+      var xs = [], ys = [];
+      for (var i = 0; i < x.length; i++) if (isNum(x[i]) && isNum(y[i])) { xs.push(x[i]); ys.push(y[i]); }
+      var n = xs.length;
+      if (n < 2) return NA;
+      var mx = xs.reduce(function (s, v) { return s + v; }, 0) / n;
+      var my = ys.reduce(function (s, v) { return s + v; }, 0) / n;
+      var sxy = 0, sxx = 0, syy = 0;
+      for (var k = 0; k < n; k++) {
+        var dx = xs[k] - mx, dy = ys[k] - my;
+        sxy += dx * dy; sxx += dx * dx; syy += dy * dy;
+      }
+      if (sxx === 0 || syy === 0) return NA;
+      var r = sxy / Math.sqrt(sxx * syy);
+      return Math.max(-1, Math.min(1, r));
+    }
+    var obj = {};
+    names.forEach(function (b) {
+      obj[b] = names.map(function (a) { return pearson(arrs[a], arrs[b]); });
+    });
+    var out = DataFrame.fromColumns(obj, { columns: names, index: new Index(names) });
+    var decl = {};
+    names.forEach(function (n) { decl[n] = 'float64'; });
+    return out.declareDtypes(decl);
+  };
 
   // ──────────────────────────────────────────────────────────── 공개 API
 
@@ -1589,7 +2103,15 @@
     trace: trace,
 
     // 표시
-    fmt: fmt
+    fmt: fmt,
+    fmtTyped: fmtTyped,
+    fmtDate: fmtDate,
+
+    // 2부 — 날짜
+    toDatetime: toDatetime,
+    parseDate: parseDate,
+    isDatetimeDtype: isDatetimeDtype,
+    DATETIME: DATETIME
   };
 
   if (typeof window !== 'undefined') window.DF = DF;

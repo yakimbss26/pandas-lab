@@ -4,10 +4,11 @@
 
 | 단계 | 무엇을 | 파일 | 상태 |
 |:--:|:---|:---|:---|
-| 1 | 엔진 단위 테스트 | `df.test.js` | **164건 통과** |
-| 2 | 엔진 ↔ 실제 pandas 교차 검증 | `gen_expected.py` → `expected.json` → `cross.test.js` | **88건 통과** |
-| 3 | 교재 코드 블록 실행 + 출력 대조 | `verify_md.py`, `verify_outputs.py` | 미작성 |
-| 4 | 브라우저 실조작 | `browser_check.js` | 7개 장 통과 |
+| 1 | 엔진 단위 테스트 | `df.test.js` | **219건 통과** |
+| 2 | 엔진 ↔ 실제 pandas 교차 검증 | `gen_expected.py` → `expected.json` → `cross.test.js` | **160건 통과** |
+| 3 | 교재 코드 블록 실행 + 출력 대조 | `verify_md.py` | 1부 272블록 통과 |
+| 4 | 브라우저 실조작 | `browser_check.js` | 20장 + 과제 통과 (표 셀 5,520) |
+| 4+ | 화면 코드 실제 실행 | `harvest_code.js` → `run_code_blocks.py` | 2부 26블록 통과 |
 | — | 배포 산출물 저작권·비밀 검사 | `check_licensing.js` | 통과 |
 
 **2번이 가장 강한 보증이다.** 손계산 기대값에는 사람의 착각이 섞이지만 실제 pandas 가 낸 출력은 그렇지 않다.
@@ -153,6 +154,56 @@ fetch('/webapp/test/browser_check.js').then(r => r.text()).then(eval)
 그리고 브라우저의 스크롤 복원. 해시로 장을 옮기는 앱이므로 `history.scrollRestoration = 'manual'`
 로 끄고, 스크롤은 **장을 옮길 때만** 하도록 고쳤다. node 하네스로는 절대 잡히지 않는 종류다.
 
+## ★ `verify_md.py` 의 "다이어그램 건너뛰기" 가 실패를 숨겼다 (2부 집필 중)
+
+출력 블록이 표가 아니라 설명 그림(화살표·상자 문자)이면 대조를 건너뛰게 해 두었는데,
+판정이 **"한글이 많으면 다이어그램"** 이어서 한글 열 이름을 가진 **진짜 출력**까지 건너뛰었다.
+그 틈에 손으로 옮겨 적은 상관계수 표(`월` 행이 `0.250451` 로 틀림)가 통과로 숨어 있었다.
+
+지금 판정: **대조가 실패했고** 기대 출력과 실제 출력의 토큰 겹침이 0.5 미만일 때만 다이어그램으로 본다.
+요약 줄에 `그중 다이어그램 N` 이 찍힌다 — **이 숫자가 0 이 아니면 해당 블록을 눈으로 확인하라.**
+건너뛰기는 검증기에서 가장 위험한 기능이다. 조건을 넓힐 때는 일부러 틀린 출력을 넣어 잡히는지 먼저 본다.
+
+## 2부(`docs/draft/v*.md`) 검증
+
+```bash
+python -X utf8 webapp/test/verify_md.py docs/draft/v3-v4-matplotlib-seaborn.md --fix --figs
+```
+
+- `# 그림: 이름` 이 붙은 블록은 그 그림을 `docs/fig/이름.png` 로 저장한다(`--figs`). 본문의 `![](docs/fig/...)` 가 없는 파일을 가리키면 실패다.
+- 4개 데이터 파일(`seoul_temp_day.csv` 등)은 `수업자료/` 에서 작업 폴더로 복사해 돌린다. 원본이 없으면 2부 블록은 돌지 않는다.
+- 한 블록이 오래 걸리면(`SLOW_SEC`) 따로 보고한다 — 4만 행에 `pairplot` 을 걸면 수업 시간에 멈춘다.
+
+## 화면 코드 실행 검사 — "붙여 바로 실행된다" 를 실제로 확인한다
+
+웹앱의 `UI.code(src, { dataset })` 는 복사할 때 머리말(import · 글꼴 · 읽기)을 붙여 준다.
+화면에 "IDLE 에 붙여 바로 실행할 수 있다" 고 적혀 있으니 **정말 도는지** 돌려 본다.
+
+```js
+// 1. npm start 로 띄운 앱의 콘솔에서 — 반환된 JSON 문자열을 파일(예: harvest.json)로 저장
+fetch('/webapp/test/harvest_code.js').then(r => r.text()).then(eval)
+```
+
+```bash
+python -X utf8 webapp/test/run_code_blocks.py harvest.json
+```
+
+블록마다 격리된 전역에서 돌리고 예외·경고를 모두 적는다. 화면에 출력이 실려 있으면 실제 출력과 나란히 보여 준다.
+**2부를 만들 때 이 검사가 잡은 것**(node 하네스·`browser_check.js`·교차 검증 어디에도 걸리지 않았다):
+
+| 무엇 | 왜 못 잡았나 |
+|:---|:---|
+| 정의 안 된 변수(`연강수량`, `연도별월합계`) — 다른 블록에서 만든 것 | 화면에서는 이어서 읽히니 자연스러워 보인다 |
+| 인덱스를 안 바꾼 채 `pop.loc['제주특별자치도', …]` | 엔진 쪽 계산은 따로 인덱스를 만들어 맞게 나왔다 |
+| 머리말이 `년`·`월` 을 더해 `rain.shape` 가 `(43100, 5)` — 화면은 `(43100, 3)` | 머리말은 화면에 안 보인다 |
+| `sns.boxplot` 의 `vert` 경고 | 브라우저에는 matplotlib 이 없다 |
+| `print` 가 찍는 전 자릿수 — 엔진과 pandas 는 더하는 순서가 달라 마지막 자리가 다르다 | 값 비교는 허용 오차로 한다 |
+| 12월 평균이 30.9(엔진) vs 31.2(pandas) — 기록이 없는 1987년 12월을 0 으로 넣었다 | 교차 검증 케이스에 없는 경로 |
+
+마지막 줄이 특히 아프다 — **바로 그 장(V6)이 "빈 달을 0 으로 세지 마라" 를 가르친다.**
+출력을 화면에 실을 때는 실수를 전 자릿수로 찍지 말고 `round(…, 6)` 처럼 **코드에서 자릿수를 정해** 찍는다.
+`FigureCanvasAgg is non-interactive` 경고는 이 검사기가 창 없이 돌아서 나는 것이라 걸러 둔다.
+
 ## 코드 블록 표시 규칙 (`docs/집필규칙.md` §4)
 
 | 표시 | `verify_md.py` 판정 |
@@ -170,4 +221,6 @@ fetch('/webapp/test/browser_check.js').then(r => r.text()).then(eval)
 - **교재 검증이 파일을 만든다.** `to_pickle`/`to_csv` 예제가 실제로 파일을 쓴다.
   스크래치패드에 쓰게 하고 `.gitignore` 에 넣어라.
 - **matplotlib 이 창을 띄우며 멈춘다.** `MPLBACKEND=Agg` 를 설정한다.
-- **seaborn 이 없다.** 원본의 `sns.distplot` 계열은 재현 불가다. 교재도 matplotlib 만 쓴다.
+- **seaborn 은 0.13.2 를 설치했다(2부용).** 1부는 여전히 matplotlib 만 쓴다.
+  원본의 `sns.distplot` 은 0.14 에서 없어질 예정인 API 라 2부는 `histplot`/`kdeplot` 으로 쓴다(정정표-시각화 참고).
+  `sns.boxplot` 은 matplotlib 3.11 에서 `vert` 경고를 낸다 — 경고가 나도 `# ✗` 가 아닌 블록은 실패로 잡히니 경고 필터를 확인하라.

@@ -159,9 +159,15 @@
     df.columns.forEach(function (n) { cols.push({ key: n, label: n, digits: opts.digits }); });
     var rows = [];
     var limit = opts.maxRows === undefined ? df.nrows() : Math.min(df.nrows(), opts.maxRows);
+    /* 날짜 열은 값이 epoch 밀리초 숫자라서 dtype 을 보고 날짜로 바꿔 보여 준다(없으면 숫자가 찍힌다) */
+    var dts = df.dtypes(), cache = {};
+    df.columns.forEach(function (n) { cache[n] = df.col(n); });
     for (var i = 0; i < limit; i++) {
       var r = { __index__: df.index.at(i) };
-      df.columns.forEach(function (n) { r[n] = df.col(n).at(i); });
+      df.columns.forEach(function (n) {
+        var v = cache[n].at(i);
+        r[n] = window.DF && window.DF.isDatetimeDtype(dts[n]) ? window.DF.fmtTyped(v, dts[n]) : v;
+      });
       rows.push(r);
     }
     var node = table(cols, rows, Object.assign({}, opts, { maxRows: undefined }));
@@ -177,7 +183,8 @@
     opts = opts || {};
     var rows = [];
     var limit = opts.maxRows === undefined ? s.length() : Math.min(s.length(), opts.maxRows);
-    for (var i = 0; i < limit; i++) rows.push({ idx: s.index.at(i), val: s.at(i) });
+    var isDt = window.DF && window.DF.isDatetimeDtype(s.dtype);
+    for (var i = 0; i < limit; i++) rows.push({ idx: s.index.at(i), val: isDt ? window.DF.fmtTyped(s.at(i), s.dtype) : s.at(i) });
     var node = table(
       [{ key: 'idx', label: s.index.name === null ? '' : s.index.name },
        { key: 'val', label: s.name === null ? '' : s.name, digits: opts.digits }],
@@ -495,6 +502,447 @@
     return out;
   }
 
+  // ═══════════════════════════════════════════════ 2부 차트 — 선 · 세로 막대 · 분포 · 히트맵 · 피라미드
+  //
+  // dataviz 규칙을 그대로 따른다(docs/2부-설계.md §4):
+  //   · 계열은 검증된 순서(원본 파랑 · 사본 주황 · 결과 초록)로 **최대 3개**. 넘으면 던진다
+  //   · 모든 차트에 표 보기 twin. 계열 2개 이상이면 범례 + 끝점 직접 라벨
+  //   · 값·라벨 글자는 잉크 토큰. 계열색을 입지 않는다
+  //   · 강조는 색이 아니라 **링**(2px 잉크)과 굵은 라벨
+  //   · 결측은 선을 **끊는다** — 이어 그리면 없는 값을 지어내는 것이다
+  // 무작위(부트스트랩 · 흔들림)는 시드를 고정한다. 화면을 다시 그려도 같은 그림이 나와야 한다.
+
+  var SERIES_COLORS = ['var(--c-original)', 'var(--c-copy)', 'var(--c-result)'];
+
+  function isNumber(v) { return typeof v === 'number' && !isNaN(v); }
+  function minOf(a) { var m = Infinity; for (var i = 0; i < a.length; i++) if (isNumber(a[i]) && a[i] < m) m = a[i]; return m; }
+  function maxOf(a) { var m = -Infinity; for (var i = 0; i < a.length; i++) if (isNumber(a[i]) && a[i] > m) m = a[i]; return m; }
+
+  /* 결정적 난수 (mulberry32) — 부트스트랩과 흔들림에 쓴다 */
+  function seeded(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* 선형 보간 분위수 — pandas quantile / numpy percentile 기본과 같다 */
+  function quantileOf(sorted, q) {
+    if (!sorted.length) return NaN;
+    var pos = (sorted.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  }
+  function meanOf(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return a.length ? s / a.length : NaN; }
+  function sdOf(a) {
+    if (a.length < 2) return NaN;
+    var m = meanOf(a), ss = 0;
+    for (var i = 0; i < a.length; i++) ss += (a[i] - m) * (a[i] - m);
+    return Math.sqrt(ss / (a.length - 1));                       // ddof=1 (pandas·seaborn 과 같다)
+  }
+
+  /* 상자그림 다섯 수치. 수염은 Q1−1.5·IQR ~ Q3+1.5·IQR 안의 **가장 먼 실제 값**까지
+   * (matplotlib · seaborn 기본과 같다). 그 밖의 점은 이상치. */
+  function fiveNum(values) {
+    var s = values.filter(isNumber).sort(function (a, b) { return a - b; });
+    var q1 = quantileOf(s, 0.25), q2 = quantileOf(s, 0.5), q3 = quantileOf(s, 0.75), iqr = q3 - q1;
+    var lo = q1 - 1.5 * iqr, hi = q3 + 1.5 * iqr, wl = q1, wh = q3, out = [];
+    s.forEach(function (v) {
+      if (v < lo || v > hi) out.push(v);
+      else { if (v < wl) wl = v; if (v > wh) wh = v; }
+    });
+    return { n: s.length, min: s[0], q1: q1, median: q2, q3: q3, max: s[s.length - 1],
+             whiskerLo: wl, whiskerHi: wh, outliers: out, sorted: s };
+  }
+  function bootstrapCI(values, seed, nBoot, level) {
+    var rnd = seeded(seed || 1), n = values.length, means = [];
+    if (n < 2) return [NaN, NaN];
+    for (var b = 0; b < (nBoot || 1000); b++) {
+      var s = 0;
+      for (var i = 0; i < n; i++) s += values[Math.floor(rnd() * n)];
+      means.push(s / n);
+    }
+    means.sort(function (x, y) { return x - y; });
+    var a = (1 - (level || 0.95)) / 2;
+    return [quantileOf(means, a), quantileOf(means, 1 - a)];
+  }
+  /* 가우스 커널 밀도 — 대역폭은 Scott 규칙(seaborn 기본) */
+  function kde(sorted, at) {
+    var n = sorted.length, sd = sdOf(sorted);
+    var bw = sd * Math.pow(n, -1 / 5) || 1;
+    return at.map(function (x) {
+      var s = 0;
+      for (var i = 0; i < n; i++) { var z = (x - sorted[i]) / bw; s += Math.exp(-0.5 * z * z); }
+      return s / (n * bw * Math.sqrt(2 * Math.PI));
+    });
+  }
+
+  function svgRoot(W, H, kids, label) {
+    return svg('svg.viz', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: H, role: 'img', 'aria-label': label || null }, kids);
+  }
+  function yAxis(kids, y, ticks, padL, W, padR, fmtTick) {
+    ticks.forEach(function (t) {
+      kids.push(svg('line.grid-line', { x1: padL, x2: W - padR, y1: y(t), y2: y(t) }));
+      kids.push(svg('text.tick-label', { x: padL - 6, y: y(t) + 4, 'text-anchor': 'end', text: fmtTick ? fmtTick(t) : fmt(t, 2) }));
+    });
+  }
+  function hoverTip(node, html) {
+    node.addEventListener('mousemove', function (e) { tip().show(html, e.clientX, e.clientY); });
+    node.addEventListener('mouseleave', function () { tip().hide(); });
+  }
+  function checkSeriesCount(n, what) {
+    if (n > 3) throw new Error(what + ' 의 계열은 3개까지다. "그 외" 로 묶거나 차트를 나눠라 (팔레트 한계, docs/2부-설계.md §4).');
+  }
+
+  /* 선그래프 — 시간에 따른 변화.
+   *   line([{name, points:[[x, y], …]}], {title, xLabel, yLabel, xFormat, yMin, yMax, zero,
+   *        markers, highlight:[x…], height})
+   * y 가 결측이면 선을 끊는다. yMin/yMax 로 축 범위를 정한다(V5 의 "축 자르기" 가 쓴다).
+   * highlight 에 준 x 는 링으로 강조한다. 마우스를 올리면 가장 가까운 x 에 세로선과 값. */
+  function line(series, opts) {
+    opts = opts || {};
+    checkSeriesCount(series.length, '선그래프');
+    var W = opts.width || 640, H = opts.height || 300;
+    var multi = series.length > 1;
+    var padL = 56, padR = multi ? 92 : 20, padT = 14, padB = 42;
+    var xs = [], ys = [];
+    series.forEach(function (s) { s.points.forEach(function (p) { if (isNumber(p[0])) xs.push(p[0]); if (isNumber(p[1])) ys.push(p[1]); }); });
+    if (!xs.length || !ys.length) return el('div.note', { text: '그릴 값이 없다' });
+    var xMin = minOf(xs), xMax = maxOf(xs);
+    var yMin = opts.yMin !== undefined ? opts.yMin : (opts.zero ? Math.min(0, minOf(ys)) : minOf(ys));
+    var yMax = opts.yMax !== undefined ? opts.yMax : maxOf(ys);
+    if (yMax === yMin) { yMax += 1; yMin -= 1; }
+    var x = scale([xMin, xMax], [padL, W - padR]), y = scale([yMin, yMax], [H - padB, padT]);
+    var xf = opts.xFormat || function (v) { return fmt(v, 2); };
+    var clip = uid('clip');
+
+    var kids = [svg('defs', null, [svg('clipPath', { id: clip }, [svg('rect', { x: padL, y: padT, width: W - padL - padR, height: H - padT - padB })])])];
+    yAxis(kids, y, niceTicks(yMin, yMax, 4), padL, W, padR);
+    niceTicks(xMin, xMax, 6).forEach(function (t) {
+      kids.push(svg('text.tick-label', { x: x(t), y: H - padB + 16, 'text-anchor': 'middle', text: xf(t) }));
+    });
+    kids.push(svg('line.axis-line', { x1: padL, x2: W - padR, y1: H - padB, y2: H - padB }));
+    if (opts.xLabel) kids.push(svg('text.axis-label', { x: (padL + W - padR) / 2, y: H - 6, 'text-anchor': 'middle', text: opts.xLabel }));
+    if (opts.yLabel) kids.push(svg('text.axis-label', { x: 8, y: padT - 2, text: opts.yLabel }));
+
+    series.forEach(function (s, si) {
+      var d = '', pen = false;
+      s.points.forEach(function (p) {
+        if (!isNumber(p[0]) || !isNumber(p[1])) { pen = false; return; }      // 결측 -> 끊는다
+        d += (pen ? 'L' : 'M') + x(p[0]).toFixed(1) + ' ' + y(p[1]).toFixed(1) + ' ';
+        pen = true;
+      });
+      kids.push(svg('path.line', { d: d, fill: 'none', stroke: s.color || SERIES_COLORS[si], 'stroke-width': 2,
+        'stroke-linejoin': 'round', 'clip-path': 'url(#' + clip + ')' }));
+      if (opts.markers) s.points.forEach(function (p) {
+        if (isNumber(p[0]) && isNumber(p[1])) {
+          kids.push(svg('circle.mark', { cx: x(p[0]), cy: y(p[1]), r: 4, fill: s.color || SERIES_COLORS[si],
+            stroke: 'var(--surface-1)', 'stroke-width': 2 }));
+        }
+      });
+      if (multi) {                                             // 끝점 직접 라벨 (잉크 글자 + 색 점)
+        var last = null;
+        s.points.forEach(function (p) { if (isNumber(p[0]) && isNumber(p[1])) last = p; });
+        if (last) {
+          kids.push(svg('circle', { cx: W - padR + 8, cy: y(last[1]), r: 4, fill: s.color || SERIES_COLORS[si] }));
+          kids.push(svg('text.value-label', { x: W - padR + 16, y: y(last[1]) + 4, text: s.name }));
+        }
+      }
+    });
+
+    (opts.highlight || []).forEach(function (hx) {
+      series.forEach(function (s) {
+        s.points.forEach(function (p) {
+          if (p[0] === hx && isNumber(p[1])) {
+            kids.push(svg('circle', { cx: x(p[0]), cy: y(p[1]), r: 7, fill: 'none', stroke: 'var(--ink-1)', 'stroke-width': 2 }));
+            kids.push(svg('text.value-label', { x: x(p[0]), y: y(p[1]) - 12, 'text-anchor': 'middle',
+              'font-weight': 700, text: xf(p[0]) }));
+          }
+        });
+      });
+    });
+
+    // 가장 가까운 x 에 세로선 + 값
+    var uniq = xs.slice().sort(function (a, b) { return a - b; }).filter(function (v, i, a) { return i === 0 || v !== a[i - 1]; });
+    var byX = series.map(function (s) { var m = new Map(); s.points.forEach(function (p) { m.set(p[0], p[1]); }); return m; });
+    var cross = svg('line.crosshair', { x1: 0, x2: 0, y1: padT, y2: H - padB, visibility: 'hidden' });
+    kids.push(cross);
+    var hit = svg('rect', { x: padL, y: padT, width: W - padL - padR, height: H - padT - padB, fill: 'transparent' });
+    hit.addEventListener('mousemove', function (e) {
+      var r = hit.ownerSVGElement.getBoundingClientRect();
+      var px = (e.clientX - r.left) * (W / r.width);
+      var dv = xMin + (px - padL) / (W - padL - padR) * (xMax - xMin), best = uniq[0];
+      for (var i = 0; i < uniq.length; i++) if (Math.abs(uniq[i] - dv) < Math.abs(best - dv)) best = uniq[i];
+      cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best)); cross.setAttribute('visibility', 'visible');
+      tip().show('<b>' + esc(xf(best)) + '</b>' + series.map(function (s, si) {
+        var v = byX[si].get(best);
+        return '<br>' + esc(s.name) + ': ' + (isNumber(v) ? esc(fmt(v, 2)) : '<i>결측</i>');
+      }).join(''), e.clientX, e.clientY);
+    });
+    hit.addEventListener('mouseleave', function () { cross.setAttribute('visibility', 'hidden'); tip().hide(); });
+    kids.push(hit);
+
+    var node = svgRoot(W, H, kids, opts.title);
+    var cols = [{ key: 'x', label: opts.xLabel || 'x' }].concat(series.map(function (s, si) {
+      return { key: 's' + si, label: s.name, digits: 2 };
+    }));
+    var rows = uniq.map(function (xv) {
+      var r = { x: xf(xv) };
+      series.forEach(function (s, si) { var v = byX[si].get(xv); r['s' + si] = isNumber(v) ? v : null; });
+      return r;
+    });
+    var out = withTableTwin(node, table(cols, rows, { maxRows: opts.tableRows || 200 }), { title: opts.title });
+    if (multi) out.appendChild(legend(series.map(function (s, i) { return { label: s.name, color: s.color || SERIES_COLORS[i] }; })));
+    return out;
+  }
+
+  /* 세로 막대 — 범주마다 값 하나. seaborn barplot 처럼 **평균 하나**를 막대로 그린다.
+   *   columns([{label, values:[…]} 또는 {label, value}], {title, yLabel, yMin, errorbar:'ci'|'sd'|null,
+   *           showPoints, seed, highlight:[label…], height})
+   * values 를 주면 막대 = 평균, errorbar 로 그 퍼짐을 검은 선으로. showPoints 면 막대 뒤에 행들을 점으로.
+   * ★ yMin 을 0 보다 크게 주면 막대가 **잘린다** — V5 가 그 거짓말을 보여 줄 때만 쓴다.
+   *   그때는 "막대는 0 에서 시작해야 한다" 는 경고 딱지를 차트 위에 붙인다. */
+  function columns(groups, opts) {
+    opts = opts || {};
+    var W = opts.width || 640, H = opts.height || 300;
+    var padL = 56, padR = 16, padT = 16, padB = 42;
+    var stats = groups.map(function (g, gi) {
+      var vals = g.values ? g.values.filter(isNumber) : null;
+      var v = vals ? meanOf(vals) : g.value;
+      var err = null;
+      if (vals && opts.errorbar === 'sd') { var sd = sdOf(vals); err = [v - sd, v + sd]; }
+      if (vals && opts.errorbar === 'ci') err = bootstrapCI(vals, (opts.seed || 7) + gi, 1000, 0.95);
+      return { label: g.label, value: v, n: vals ? vals.length : null, err: err, vals: vals };
+    });
+    var all = [];
+    stats.forEach(function (s) {
+      all.push(s.value);
+      if (s.err) { all.push(s.err[0]); all.push(s.err[1]); }
+      if (opts.showPoints && s.vals) all = all.concat(s.vals);
+    });
+    var yMin = opts.yMin !== undefined ? opts.yMin : Math.min(0, minOf(all));
+    var yMax = opts.yMax !== undefined ? opts.yMax : maxOf(all);
+    if (yMax === yMin) yMax = yMin + 1;
+    var y = scale([yMin, yMax], [H - padB, padT]);
+    var band = (W - padL - padR) / Math.max(1, stats.length), bw = Math.min(48, band * 0.7);
+    var clip = uid('clip');
+    var kids = [svg('defs', null, [svg('clipPath', { id: clip }, [svg('rect', { x: padL, y: padT, width: W - padL - padR, height: H - padT - padB })])])];
+    yAxis(kids, y, niceTicks(yMin, yMax, 4), padL, W, padR);
+    var truncated = yMin > 0;
+    var rnd = seeded(opts.seed || 11);
+    var hi = new Set(opts.highlight || []);
+    var every = Math.max(1, Math.ceil(stats.length / 16));      // 라벨이 겹치지 않게 솎는다
+    stats.forEach(function (s, i) {
+      var cx = padL + band * i + band / 2;
+      if (opts.showPoints && s.vals) {
+        s.vals.forEach(function (v) {
+          kids.push(svg('circle', { cx: cx + (rnd() - 0.5) * bw * 0.9, cy: y(v), r: 2, fill: 'var(--ink-muted)', 'fill-opacity': 0.35,
+            'clip-path': 'url(#' + clip + ')' }));
+        });
+      }
+      var top = y(Math.max(s.value, yMin)), base = y(Math.max(0, yMin));
+      var r = svg('rect.mark', { x: cx - bw / 2, y: Math.min(top, base), width: bw, height: Math.abs(base - top), rx: 4, ry: 4,
+        fill: s.color || opts.color || 'var(--c-original)', 'fill-opacity': opts.showPoints ? 0.55 : 1, 'clip-path': 'url(#' + clip + ')' });
+      hoverTip(r, '<b>' + esc(s.label) + '</b><br>' + (s.n !== null ? '평균 ' : '') + esc(fmt(s.value, 2)) +
+        (s.n !== null ? '<br>행 ' + s.n + '개' : '') + (s.err ? '<br>' + esc(fmt(s.err[0], 2)) + ' ~ ' + esc(fmt(s.err[1], 2)) : ''));
+      kids.push(r);
+      if (s.err && isNumber(s.err[0])) {
+        kids.push(svg('line', { x1: cx, x2: cx, y1: y(s.err[0]), y2: y(s.err[1]), stroke: 'var(--ink-1)', 'stroke-width': 2 }));
+      }
+      if (hi.has(s.label)) kids.push(svg('rect', { x: cx - bw / 2 - 3, y: Math.min(top, base) - 3, width: bw + 6,
+        height: Math.abs(base - top) + 6, rx: 6, fill: 'none', stroke: 'var(--ink-1)', 'stroke-width': 2 }));
+      if (i % every === 0) kids.push(svg('text.tick-label', { x: cx, y: H - padB + 16, 'text-anchor': 'middle', text: String(s.label) }));
+    });
+    kids.push(svg('line.axis-line', { x1: padL, x2: W - padR, y1: y(Math.max(0, yMin)), y2: y(Math.max(0, yMin)) }));
+    if (opts.yLabel) kids.push(svg('text.axis-label', { x: 8, y: padT - 4, text: opts.yLabel }));
+    var node = svgRoot(W, H, kids, opts.title);
+    var cols = [{ key: 'label', label: opts.xLabel || '항목' }, { key: 'value', label: stats[0] && stats[0].n !== null ? '평균' : '값', digits: 3 }];
+    if (stats.some(function (s) { return s.n !== null; })) cols.push({ key: 'n', label: '행 수' });
+    if (opts.errorbar) { cols.push({ key: 'lo', label: '아래', digits: 3 }); cols.push({ key: 'hi', label: '위', digits: 3 }); }
+    var out = withTableTwin(node, table(cols, stats.map(function (s) {
+      return { label: s.label, value: s.value, n: s.n, lo: s.err ? s.err[0] : null, hi: s.err ? s.err[1] : null };
+    }), { maxRows: 200 }), { title: opts.title });
+    if (truncated) {
+      out.insertBefore(danger('축이 잘렸다', 'y축이 ' + fmt(yMin, 2) + ' 에서 시작한다. 막대의 길이가 값에 비례하지 않는다.'), out.firstChild.nextSibling);
+    }
+    return out;
+  }
+
+  /* 분포 — 상자 · 바이올린 · 스트립. 범주마다 값 묶음 하나.
+   *   dist([{label, values}], {kind:'box'|'violin'|'strip', overlay:'strip', title, yLabel, maxPoints, seed})
+   * 표 보기에는 다섯 수치와 수염 끝, 이상치 개수가 나온다(상자그림을 읽는 법을 표로 확인한다). */
+  function dist(groups, opts) {
+    opts = opts || {};
+    var kind = opts.kind || 'box';
+    var W = opts.width || 640, H = opts.height || 320;
+    var padL = 56, padR = 16, padT = 14, padB = 42;
+    var st = groups.map(function (g) { var f = fiveNum(g.values); f.label = g.label; return f; });
+    var all = [];
+    st.forEach(function (f) { all.push(f.min, f.max); });
+    var yMin = opts.yMin !== undefined ? opts.yMin : minOf(all), yMax = opts.yMax !== undefined ? opts.yMax : maxOf(all);
+    if (yMax === yMin) { yMax += 1; yMin -= 1; }
+    var y = scale([yMin, yMax], [H - padB, padT]);
+    var band = (W - padL - padR) / Math.max(1, st.length), bw = Math.min(56, band * 0.6);
+    var kids = [];
+    yAxis(kids, y, niceTicks(yMin, yMax, 4), padL, W, padR);
+    var color = opts.color || 'var(--c-original)';
+    var rnd = seeded(opts.seed || 5), cap = opts.maxPoints || 400;
+    st.forEach(function (f, i) {
+      var cx = padL + band * i + band / 2;
+      if (!f.n) return;
+      if (kind === 'violin') {
+        var at = [], K = 48;
+        for (var k = 0; k <= K; k++) at.push(f.min + (f.max - f.min) * k / K);
+        var dens = kde(f.sorted, at), dm = Math.max.apply(null, dens) || 1;
+        var vw = Math.min(110, band * 0.85);                   // 바이올린은 모양을 읽어야 하므로 상자보다 넓게
+        var right = at.map(function (v, k) { return (cx + dens[k] / dm * vw / 2).toFixed(1) + ' ' + y(v).toFixed(1); });
+        var left = at.slice().reverse().map(function (v, k) { return (cx - dens[K - k] / dm * vw / 2).toFixed(1) + ' ' + y(v).toFixed(1); });
+        kids.push(svg('path.mark', { d: 'M' + right.join(' L') + ' L' + left.join(' L') + ' Z', fill: color, 'fill-opacity': 0.45, stroke: color, 'stroke-width': 1.5 }));
+        kids.push(svg('line', { x1: cx, x2: cx, y1: y(f.q1), y2: y(f.q3), stroke: 'var(--ink-1)', 'stroke-width': 4 }));
+        kids.push(svg('circle', { cx: cx, cy: y(f.median), r: 3, fill: 'var(--surface-1)' }));
+      }
+      if (kind === 'box') {
+        kids.push(svg('line', { x1: cx, x2: cx, y1: y(f.whiskerLo), y2: y(f.q1), stroke: 'var(--ink-2)', 'stroke-width': 1.5 }));
+        kids.push(svg('line', { x1: cx, x2: cx, y1: y(f.q3), y2: y(f.whiskerHi), stroke: 'var(--ink-2)', 'stroke-width': 1.5 }));
+        kids.push(svg('line', { x1: cx - bw / 4, x2: cx + bw / 4, y1: y(f.whiskerLo), y2: y(f.whiskerLo), stroke: 'var(--ink-2)', 'stroke-width': 1.5 }));
+        kids.push(svg('line', { x1: cx - bw / 4, x2: cx + bw / 4, y1: y(f.whiskerHi), y2: y(f.whiskerHi), stroke: 'var(--ink-2)', 'stroke-width': 1.5 }));
+        var b = svg('rect.mark', { x: cx - bw / 2, y: y(f.q3), width: bw, height: Math.max(1, y(f.q1) - y(f.q3)), rx: 4,
+          fill: color, 'fill-opacity': opts.overlay === 'strip' ? 0.3 : 0.6, stroke: color, 'stroke-width': 1.5 });
+        hoverTip(b, '<b>' + esc(f.label) + '</b><br>Q1 ' + esc(fmt(f.q1, 2)) + ' · 중앙값 ' + esc(fmt(f.median, 2)) + ' · Q3 ' + esc(fmt(f.q3, 2)));
+        kids.push(b);
+        kids.push(svg('line', { x1: cx - bw / 2, x2: cx + bw / 2, y1: y(f.median), y2: y(f.median), stroke: 'var(--ink-1)', 'stroke-width': 2 }));
+        if (opts.overlay !== 'strip') f.outliers.forEach(function (v) {
+          kids.push(svg('circle', { cx: cx, cy: y(v), r: 3, fill: 'none', stroke: 'var(--ink-2)', 'stroke-width': 1.2 }));
+        });
+      }
+      if (kind === 'strip' || opts.overlay === 'strip') {
+        var pts = f.sorted;
+        if (pts.length > cap) { var step = pts.length / cap, p2 = []; for (var q = 0; q < cap; q++) p2.push(pts[Math.floor(q * step)]); pts = p2; }
+        pts.forEach(function (v) {
+          kids.push(svg('circle', { cx: cx + (rnd() - 0.5) * bw * 0.8, cy: y(v), r: 2.5,
+            fill: kind === 'strip' ? color : 'var(--ink-2)', 'fill-opacity': 0.5 }));
+        });
+      }
+      kids.push(svg('text.tick-label', { x: cx, y: H - padB + 16, 'text-anchor': 'middle', text: String(f.label) }));
+    });
+    kids.push(svg('line.axis-line', { x1: padL, x2: W - padR, y1: H - padB, y2: H - padB }));
+    if (opts.yLabel) kids.push(svg('text.axis-label', { x: 8, y: padT - 2, text: opts.yLabel }));
+    var node = svgRoot(W, H, kids, opts.title);
+    var tbl = table([{ key: 'label', label: opts.xLabel || '범주' }, { key: 'n', label: '개수' },
+      { key: 'min', label: '최솟값', digits: 2 }, { key: 'q1', label: 'Q1', digits: 2 }, { key: 'median', label: '중앙값', digits: 2 },
+      { key: 'q3', label: 'Q3', digits: 2 }, { key: 'max', label: '최댓값', digits: 2 },
+      { key: 'whiskerLo', label: '수염 아래', digits: 2 }, { key: 'whiskerHi', label: '수염 위', digits: 2 }, { key: 'nout', label: '이상치' }],
+      st.map(function (f) { return Object.assign({}, f, { nout: f.outliers.length }); }), {});
+    return withTableTwin(node, tbl, { title: opts.title });
+  }
+
+  /* 히트맵 — 격자의 크기(순차) 또는 양·음(발산).
+   *   heatmap(rowLabels, colLabels, values[r][c], {scale:'sequential'|'diverging', digits, title, rowTitle, colTitle})
+   * 색은 극(끝) 색 하나를 **투명도**로 겹쳐 만든다 — 라이트·다크 모두 한 색조의 명도 단계가 된다
+   * (무지개 금지). 발산은 가운데가 회색, 음수는 빨강(slot 8), 양수는 파랑. 칸에는 숫자를 함께 쓴다
+   * (색만으로 값을 말하지 않는다). 결측 칸은 회색 해칭 + 'NaN'. */
+  function heatmap(rowLabels, colLabels, values, opts) {
+    opts = opts || {};
+    var div = opts.scale === 'diverging';
+    var cw = opts.cellWidth || Math.max(36, Math.min(64, 560 / Math.max(1, colLabels.length)));
+    var ch = opts.cellHeight || 26;
+    var padL = opts.padLeft || 72, padT = 30, padR = 12, padB = 36;
+    var W = padL + cw * colLabels.length + padR, H = padT + ch * rowLabels.length + padB;
+    var flat = [];
+    values.forEach(function (r) { r.forEach(function (v) { if (isNumber(v)) flat.push(v); }); });
+    var lo = div ? -1 : minOf(flat), hi = div ? 1 : maxOf(flat);
+    if (opts.min !== undefined) lo = opts.min;
+    if (opts.max !== undefined) hi = opts.max;
+    var hatch = uid('hatch');
+    var kids = [svg('defs', null, [svg('pattern', { id: hatch, width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' },
+      [svg('line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'var(--c-na)', 'stroke-width': 1.5 })])])];
+    colLabels.forEach(function (c, j) {
+      kids.push(svg('text.tick-label', { x: padL + cw * j + cw / 2, y: padT - 8, 'text-anchor': 'middle', text: String(c) }));
+    });
+    rowLabels.forEach(function (rl, i) {
+      kids.push(svg('text.tick-label', { x: padL - 6, y: padT + ch * i + ch / 2 + 4, 'text-anchor': 'end', text: String(rl) }));
+      colLabels.forEach(function (cl, j) {
+        var v = values[i][j], x0 = padL + cw * j, y0 = padT + ch * i;
+        if (!isNumber(v)) {
+          kids.push(svg('rect', { x: x0 + 1, y: y0 + 1, width: cw - 2, height: ch - 2, fill: 'url(#' + hatch + ')' }));
+          kids.push(svg('text.tick-label', { x: x0 + cw / 2, y: y0 + ch / 2 + 4, 'text-anchor': 'middle', text: 'NaN' }));
+          return;
+        }
+        var t, pole;
+        if (div) { t = Math.min(1, Math.abs(v) / Math.max(Math.abs(lo), Math.abs(hi))); pole = v < 0 ? 'var(--c-original)' : 'var(--div-pos)'; }
+        else { t = hi === lo ? 1 : 0.12 + 0.88 * (v - lo) / (hi - lo); pole = 'var(--c-original)'; }
+        kids.push(svg('rect', { x: x0 + 1, y: y0 + 1, width: cw - 2, height: ch - 2, fill: div ? 'var(--div-mid)' : 'var(--surface-1)' }));
+        var cell = svg('rect', { x: x0 + 1, y: y0 + 1, width: cw - 2, height: ch - 2, rx: 2, fill: pole, 'fill-opacity': t.toFixed(3) });
+        hoverTip(cell, '<b>' + esc(String(rl)) + ' · ' + esc(String(cl)) + '</b><br>' + esc(fmt(v, 4)));
+        kids.push(cell);
+        kids.push(svg('text', { x: x0 + cw / 2, y: y0 + ch / 2 + 4, 'text-anchor': 'middle', 'font-size': 11,
+          fill: t > 0.55 ? '#ffffff' : 'var(--ink-1)', 'pointer-events': 'none',
+          // seaborn 의 annot=True, fmt='.2f' 처럼 자릿수를 고정한다 — 1 이 아니라 1.00
+          text: v.toFixed(opts.digits === undefined ? 2 : opts.digits) }));
+      });
+    });
+    if (opts.colTitle) kids.push(svg('text.axis-label', { x: padL + cw * colLabels.length / 2, y: 12, 'text-anchor': 'middle', text: opts.colTitle }));
+    if (opts.rowTitle) kids.push(svg('text.axis-label', { x: 4, y: 12, text: opts.rowTitle }));
+    kids.push(svg('text.tick-label', { x: padL, y: H - 12, text: (div ? '파랑 = 음, 회색 = 0, 빨강 = 양 · 진할수록 크다' : '진할수록 크다') +
+      ' (' + fmt(lo, 2) + ' ~ ' + fmt(hi, 2) + ')' }));
+    var node = svgRoot(W, H, kids, opts.title);
+    var cols = [{ key: '_r', label: opts.rowTitle || '' }].concat(colLabels.map(function (c, j) { return { key: 'c' + j, label: String(c), digits: opts.digits === undefined ? 2 : opts.digits }; }));
+    var rows = rowLabels.map(function (rl, i) {
+      var r = { _r: rl };
+      colLabels.forEach(function (c, j) { r['c' + j] = isNumber(values[i][j]) ? values[i][j] : null; });
+      return r;
+    });
+    return withTableTwin(node, table(cols, rows, { maxRows: 200 }), { title: opts.title });
+  }
+
+  /* 인구 피라미드 — 가운데 축에서 양쪽으로.
+   *   pyramid(labels(아래 -> 위), left[], right[], {leftName, rightName, absTicks=true, title, step})
+   * ★ absTicks:false 는 matplotlib 로 barh(-여자) 를 그렸을 때처럼 왼쪽 눈금이 **음수로** 찍힌다.
+   *   V5 가 그 문제를 보여 줄 때만 쓴다. 인구에 음수는 없다. */
+  function pyramid(labels, left, right, opts) {
+    opts = opts || {};
+    var n = labels.length;
+    var W = opts.width || 640, rowH = opts.rowHeight || Math.max(3, Math.min(14, 440 / n));
+    var padL = 48, padR = 16, padT = 28, padB = 36, H = padT + rowH * n + padB;
+    var m = Math.max(maxOf(left), maxOf(right)) || 1;
+    var cx = (padL + W - padR) / 2;
+    var xl = scale([0, m], [cx, padL]), xr = scale([0, m], [cx, W - padR]);
+    var kids = [];
+    var ticks = niceTicks(0, m, 3);
+    var absT = opts.absTicks !== false;
+    ticks.forEach(function (t) {
+      kids.push(svg('line.grid-line', { x1: xl(t), x2: xl(t), y1: padT, y2: H - padB }));
+      kids.push(svg('line.grid-line', { x1: xr(t), x2: xr(t), y1: padT, y2: H - padB }));
+      kids.push(svg('text.tick-label', { x: xl(t), y: H - padB + 16, 'text-anchor': 'middle', text: t === 0 ? '0' : (absT ? '' : '−') + fmt(t, 0) }));
+      if (t) kids.push(svg('text.tick-label', { x: xr(t), y: H - padB + 16, 'text-anchor': 'middle', text: fmt(t, 0) }));
+    });
+    var lc = opts.leftColor || 'var(--c-original)', rc = opts.rightColor || 'var(--c-copy)';
+    var every = opts.labelEvery || Math.max(1, Math.ceil(n / 12));
+    labels.forEach(function (lab, i) {
+      var y0 = padT + rowH * (n - 1 - i);                      // 첫 라벨(가장 어린 나이)이 맨 아래
+      var a = svg('rect', { x: xl(left[i] || 0), y: y0 + 0.5, width: Math.max(0, cx - xl(left[i] || 0) - 1), height: Math.max(1, rowH - 1), fill: lc });
+      var b = svg('rect', { x: cx + 1, y: y0 + 0.5, width: Math.max(0, xr(right[i] || 0) - cx - 1), height: Math.max(1, rowH - 1), fill: rc });
+      var h = '<b>' + esc(String(lab)) + '</b><br>' + esc(opts.leftName || '왼쪽') + ' ' + esc(fmt(left[i], 0)) +
+        '<br>' + esc(opts.rightName || '오른쪽') + ' ' + esc(fmt(right[i], 0));
+      hoverTip(a, h); hoverTip(b, h);
+      kids.push(a, b);
+      if (i % every === 0) kids.push(svg('text.tick-label', { x: padL - 6, y: y0 + rowH / 2 + 4, 'text-anchor': 'end', text: String(lab) }));
+    });
+    kids.push(svg('line.axis-line', { x1: cx, x2: cx, y1: padT, y2: H - padB }));
+    kids.push(svg('text.value-label', { x: (padL + cx) / 2, y: 16, 'text-anchor': 'middle', text: opts.leftName || '' }));
+    kids.push(svg('text.value-label', { x: (cx + W - padR) / 2, y: 16, 'text-anchor': 'middle', text: opts.rightName || '' }));
+    var node = svgRoot(W, H, kids, opts.title);
+    var tbl = table([{ key: 'l', label: opts.labelHeader || '구간' }, { key: 'a', label: opts.leftName || '왼쪽' },
+      { key: 'b', label: opts.rightName || '오른쪽' }, { key: 'd', label: '차 (' + (opts.leftName || '왼') + '−' + (opts.rightName || '오른') + ')' }],
+      labels.map(function (lab, i) { return { l: lab, a: left[i], b: right[i], d: (left[i] || 0) - (right[i] || 0) }; }), { maxRows: 200 });
+    var out = withTableTwin(node, tbl, { title: opts.title });
+    out.appendChild(legend([{ label: opts.leftName || '왼쪽', color: lc }, { label: opts.rightName || '오른쪽', color: rc }]));
+    return out;
+  }
+
   /* 범례 — 계열 2개 이상이면 반드시 붙는다. 색 옆에 항상 글자가 온다. */
   function legend(items) {
     var box = el('div.legend');
@@ -646,7 +1094,26 @@
     titanic: ['import pandas as pd', '', "t = pd.read_csv('train.csv')"],
     ramen: ['import pandas as pd', '', "ramen = pd.read_csv('ramen-ratings.csv')"],
     abalone: ['import pandas as pd', '', "df = pd.read_csv('abalone.csv')"],
-    earthquake: ['import pandas as pd', '', "data = pd.read_csv('lab_earthquake.csv')"]
+    earthquake: ['import pandas as pd', '', "data = pd.read_csv('lab_earthquake.csv')"],
+    /* 2부. 교재 각 장의 첫 블록과 같은 정리를 한다 — 복사해 붙이면 바로 그림이 나온다.
+     * 변수 이름도 교재와 같다: 일별 기온 df · 연별 기온 data · 강수 rain · 인구 pop */
+    seoul_day: ['import pandas as pd', 'import matplotlib.pyplot as plt', 'import seaborn as sns',
+      "plt.rc('font', family='Malgun Gothic')   # 맥은 'AppleGothic'", "plt.rc('axes', unicode_minus=False)", '',
+      "df = pd.read_csv('seoul_temp_day.csv', encoding='cp949')",
+      "df['날짜'] = df['날짜'].str.strip()", "df = df[df['날짜'] != ''].copy()",
+      "df['날짜'] = pd.to_datetime(df['날짜'])",
+      "df['년'] = df['날짜'].dt.year", "df['월'] = df['날짜'].dt.month"],
+    seoul_year: ['import pandas as pd', 'import matplotlib.pyplot as plt',
+      "plt.rc('font', family='Malgun Gothic')   # 맥은 'AppleGothic'", "plt.rc('axes', unicode_minus=False)", '',
+      "data = pd.read_csv('seoul_temp.csv', encoding='cp949')"],
+    busan_rain: ['import pandas as pd', 'import matplotlib.pyplot as plt', 'import seaborn as sns',
+      "plt.rc('font', family='Malgun Gothic')   # 맥은 'AppleGothic'", "plt.rc('axes', unicode_minus=False)", '',
+      // 교재 V6 첫 블록처럼 읽기만 한다 — rain.shape 가 (43100, 3) 이어야 화면과 같다.
+      // 년·월 열이 필요한 블록은 그 블록 안에서 만든다.
+      "rain = pd.read_csv('busan_rain_day.csv', encoding='cp949')"],
+    korea_pop: ['import pandas as pd', 'import matplotlib.pyplot as plt',
+      "plt.rc('font', family='Malgun Gothic')   # 맥은 'AppleGothic'", "plt.rc('axes', unicode_minus=False)", '',
+      "pop = pd.read_csv('korea_pop.csv', encoding='cp949', thousands=',')"]
   };
 
   /* 클립보드에 쓴다. https 가 아니거나 file:// 로 열면 navigator.clipboard 가 없으므로
@@ -718,7 +1185,7 @@
           }, 1600);
         }, function () {
           // 복사가 막힌 환경 — 학생이 직접 고를 수 있게 코드를 선택해 준다
-          btn.textContent = '직접 복사하세요 (Ctrl+C)';
+          btn.textContent = 'Ctrl+C 로 직접 복사';
           var r = document.createRange();
           r.selectNodeContents(pre);
           var sel = window.getSelection();
@@ -897,7 +1364,19 @@
     box.style.counterReset = 'qn ' + idx;
 
     var explain = el('div.q-explain', { hidden: true });
-    var choices = spec.choices || [];
+    /* 보기 순서를 섞는다. 모듈 작성자는 정답을 첫 보기에 두는 버릇이 있어서(2부 20문항 중
+     * 17문항이 A 였다) 학생이 "모르면 A" 를 배운다. 문제 글을 씨앗으로 섞으므로 다시 방문해도
+     * 같은 순서다. 진도는 정답 여부만 기록하므로 순서가 바뀌어도 기록은 그대로다.
+     * 보기 순서에 뜻이 있으면(예: 0 · 1 · 2 처럼 크기순) spec.keepOrder: true. */
+    var choices = (spec.choices || []).slice();
+    if (!spec.keepOrder && choices.length > 2) {
+      var h = 2166136261;
+      String(spec.question || '').split('').forEach(function (ch) { h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0; });
+      for (var si = choices.length - 1; si > 0; si--) {
+        h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; h = (h ^ (h >>> 13)) >>> 0;
+        var sj = h % (si + 1), tmp = choices[si]; choices[si] = choices[sj]; choices[sj] = tmp;
+      }
+    }
     var answered = false;
 
     var choiceEls = choices.map(function (c, ci) {
@@ -946,6 +1425,9 @@
     blockView: blockView, shareBadge: shareBadge, alignView: alignView, groupView: groupView,
     // 차트
     bar: bar, hist: hist, scatter: scatter, legend: legend, withTableTwin: withTableTwin,
+    // 2부 차트
+    line: line, columns: columns, dist: dist, heatmap: heatmap, pyramid: pyramid,
+    fiveNum: fiveNum, bootstrapCI: bootstrapCI, seeded: seeded, SERIES_COLORS: SERIES_COLORS,
     niceTicks: niceTicks, scale: scale,
     // 컨트롤
     slider: slider, buttonGroup: buttonGroup, toggle: toggle, seg: seg, btn: btn,
