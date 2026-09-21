@@ -190,10 +190,14 @@ pd.set_option('display.max_colwidth', 40)  # 긴 문자열은 40자에서 줄인
   - 14.12 평가 지표 이해하기 — R²는 무엇을 재는가
   - 14.13 ★ 모델에 넣기 전에 반드시 확인할 것 세 가지
   - 14.14 마무리 — 14장까지 배운 것을 한 장으로
-- **연습 문제. 타이타닉에서 원하는 것만 꺼내기**
-  - 기본
-  - 중급
-  - 심화
+- **연습 문제. 타이타닉 데이터 다루기**
+  - 세트 1. 불러오고 훑어보기
+  - 세트 2. 원하는 행과 열 골라내기
+  - 세트 3. 뷰와 복사 — 고친 것이 반영되는가
+  - 세트 4. 묶어서 요약하기
+  - 세트 5. 가공하기 — 새 열 만들기
+  - 세트 6. 미니 프로젝트 — 규칙으로 생존 예측하기
+  - 도전 — 나만의 규칙
 - **2부. 데이터 시각화**
 - **V1장. 문자열과 날짜 — 파일을 쓸 수 있게 만들기**
   - V1.1 문제 제기 — 읽자마자 날짜로 바꾸면 에러가 난다
@@ -271,8 +275,14 @@ pd.set_option('display.max_colwidth', 40)  # 긴 문자열은 40자에서 줄인
   - C. 여전히 동작하는 것 — 없어졌다고 오해하기 쉬운 것
   - 2부 · 데이터 시각화에서 바로잡은 것
   - 이 교재를 만들 때 쓴 버전
-- **연습 문제 정답 — 타이타닉에서 꺼내기**
-  - 이 문제에서 가져갈 것
+- **연습 문제 정답 — 타이타닉 데이터 다루기**
+  - 세트 1. 불러오고 훑어보기
+  - 세트 2. 원하는 행과 열 골라내기
+  - 세트 3. 뷰와 복사 — 고친 것이 반영되는가
+  - 세트 4. 묶어서 요약하기
+  - 세트 5. 가공하기 — 새 열 만들기
+  - 세트 6. 미니 프로젝트 — 규칙으로 생존 예측하기
+  - 이 연습에서 가져갈 것
 
 ---
 <!-- 1부 표지 -->
@@ -6098,16 +6108,19 @@ print(model_leak.score(Xl_te, yl_te))
 ---
 
 <!-- 연습 문제 시작 -->
-## 연습 문제. 타이타닉에서 원하는 것만 꺼내기
+## 연습 문제. 타이타닉 데이터 다루기
 
-1부에서 배운 **꺼내기**(열 고르기 · 불린 마스크 · `loc`/`iloc` · `isin` · `between` · `isna` · `str.contains`)를
-타이타닉 데이터로 연습한다. 기본 5문항 → 중급 5문항 → 심화 5문항. 정답과 풀이는 책 맨 뒤
-"연습 문제 정답" 에 있다. **먼저 스스로 풀고, 답이 다르면 풀이를 보기 전에 한 번 더 의심해 보자.**
+수업에서 다룬 타이타닉 데이터로 1부 전체를 연습한다. 세트 6개 · 문항 17개와 도전 하나.
+앞의 다섯 세트는 불러오기 → 골라내기 → 복사 → 요약 → 가공 순서이고, 마지막 세트는 규칙으로 생존을 예측해
+대회 제출 파일을 만든다. 정답과 풀이는 책 맨 뒤 "연습 문제 정답" 에 있다.
+**먼저 스스로 풀고, 답이 다르면 풀이를 보기 전에 한 번 더 의심해 보자.**
 
-모든 문항은 아래 한 블록을 먼저 실행했다고 가정한다.
+모든 문항은 아래 블록을 먼저 실행했다고 가정한다. 세트에 **준비** 블록이 있으면 그것도 먼저 실행한다.
 
 ```python
 import pandas as pd
+import numpy as np
+
 t = pd.read_csv('train.csv')
 t.shape
 ```
@@ -6116,75 +6129,165 @@ t.shape
 (891, 12)
 ```
 
-> **`train.csv` 가 없으면** 사이트의 합성본을 받아 같은 폴더에 두고 두 번째 줄만 바꾼다:
+> **`train.csv` 가 없으면** 사이트의 합성본을 받아 같은 폴더에 두고 `read_csv` 의 파일 이름만 바꾼다:
 > `t = pd.read_csv('titanic-synthetic.csv')` — 받는 곳: <https://yakimbss26.github.io/pandas-lab/data/titanic-synthetic.csv>
-> 합성본은 열 이름 · 행 수 · 결측 개수가 원본과 같지만 **값은 다르다.** 그래서 정답이 두 벌이다.
+> 합성본은 열 이름 · 행 수 · 결측 개수가 원본과 같지만 **값은 다르고, 값 사이의 관계도 대부분 없다.**
+> 그래서 정답이 두 벌이고, 합성본으로는 볼 수 없는 문항에는 따로 적어 두었다.
+> `test.csv` 가 필요한 문항(1번, 마지막 세트)은 원본으로만 풀 수 있다.
 
-### 기본
+### 세트 1. 불러오고 훑어보기
 
-**문제 1.** `Name`, `Sex`, `Age` 세 열만 꺼낸 표를 만들고 `shape` 를 출력하라.
+파일을 읽고 크기·비율·대표값을 본다(2장).
 
-> 힌트 — 열 이름의 **리스트**를 대괄호에 넣는다 — 대괄호가 두 겹이 된다.
+**문제 1.** `test.csv` 를 `test_df` 로 불러와 행과 열의 개수를 출력하라. `train.csv` 에는 있는데 `test.csv` 에 없는 열은 무엇인가?
 
-**문제 2.** 여자 승객(`Sex` 가 `'female'`)만 꺼내라. 몇 명인가?
+> 힌트 — 두 표의 열 이름을 `set` 으로 바꾸면 빼기(`-`)로 차이를 구할 수 있다.
 
-> 힌트 — 비교식이 만든 True/False 를 대괄호에 넣는다(불린 마스크).
+**문제 2.** `Pclass` 별 승객 수를 **비율(%)** 로 구하라. 소수 첫째 자리까지, 등급 순서대로.
 
-**문제 3.** 1등석(`Pclass` 가 1) 승객만 꺼내라. 몇 명이고, 그중 생존자는 몇 명인가?
+> 힌트 — `value_counts(normalize=True)` 는 개수 대신 비율을 준다.
 
-> 힌트 — 꺼낸 표에서 `Survived` 열을 더하면 생존자 수다(1 = 생존).
+**문제 3.** 승객의 평균 나이(소수 둘째 자리)와 가장 비싼 요금을 각각 출력하라.
 
-**문제 4.** 나이가 60세 이상인 승객을 꺼내라. 몇 명인가? 나이가 비어 있는 승객은 이 결과에 들어가는가?
+> 힌트 — `mean()`, `max()`. 평균 나이는 몇 명으로 낸 값인가?
 
-> 힌트 — `NaN >= 60` 은 True 일까 False 일까.
+### 세트 2. 원하는 행과 열 골라내기
 
-**문제 5.** **위치로** 11번째부터 20번째 행(10개)을 꺼내라. 꺼낸 행 수와 그 안의 생존자 수를 출력하라.
+불린 마스크와 `loc` 로 꺼낸다(5장).
 
-> 힌트 — 위치는 0 부터 센다. 11번째 행의 위치는 10 이다. `iloc` 의 끝은 포함되지 않는다.
+**문제 4.** 3등석(`Pclass == 3`)이면서 생존한 승객은 몇 명인가?
 
-### 중급
+> 힌트 — 조건 두 개는 `&` 로 잇고 조건마다 괄호를 친다.
 
-**문제 6.** 1등석 **여자** 승객만 꺼내라. 몇 명인가?
+**문제 5.** 요금이 100 이상인 승객의 `Name`, `Pclass`, `Fare` 만 `loc` 로 골라 앞 5행을 출력하라. 모두 몇 명인가?
 
-> 힌트 — 조건 두 개는 `&` 로 잇고, 조건마다 **괄호**를 친다.
+> 힌트 — `t.loc[행 조건, [열 목록]]` — 쉼표 왼쪽이 행, 오른쪽이 열이다.
 
-**문제 7.** 승선항(`Embarked`)이 `'C'` 또는 `'Q'` 인 승객은 몇 명인가?
+**문제 6.** 10세 이하 어린이의 생존율을 소수 셋째 자리까지 구하라. 전체 생존율과 비교하라.
 
-> 힌트 — `==` 를 두 번 쓰고 `|` 로 이어도 되지만, 값의 목록으로 묻는 메서드가 있다.
+> 힌트 — `Survived` 는 0 과 1 이라 평균이 곧 생존율이다.
 
-**문제 8.** 요금(`Fare`)이 10 이상 30 이하인 승객은 몇 명인가?
+### 세트 3. 뷰와 복사 — 고친 것이 반영되는가
 
-> 힌트 — `>=` 와 `<=` 두 조건 대신 한 메서드로 쓸 수 있다. 양 끝을 포함하는지 확인한다.
+꺼낸 표를 고칠 때의 규칙이다(7장).
 
-**문제 9.** 나이가 **비어 있는** 승객만 꺼내라. 몇 명이고, 그중 생존자는 몇 명인가?
+**문제 7.** 1등석 승객만 골라 `first_df` 로 만들고, `first_df` 에 `Fare_KRW` 열(요금 × 1500)을 더하라. 원본 `t` 에는 이 열이 생기지 않아야 한다. 두 표에 이 열이 있는지 확인하라.
 
-> 힌트 — `== NaN` 으로는 찾을 수 없다. 결측을 묻는 메서드를 쓴다.
+> 힌트 — 꺼낸 뒤 고칠 표라면 `.copy()` 로 **내 것**임을 분명히 한다.
 
-**문제 10.** 3등석 **남자** 승객의 평균 나이를 소수 둘째 자리까지 구하라. `loc` 로 행과 열을 한 번에 골라라.
+**문제 8.** 아래 코드는 요금이 0 인 승객의 `Fare` 를 결측(`NaN`)으로 바꾸려는 것이다. 실행하면 무슨 일이 일어나는가? 이유를 말하고 올바르게 고쳐, 바뀐 개수를 확인하라.
 
-> 힌트 — `t.loc[행 조건, '열 이름']` — 쉼표 왼쪽이 행, 오른쪽이 열이다.
+```
+temp_df = t.copy()
+temp_df[temp_df['Fare'] == 0]['Fare'] = np.nan
+```
 
-### 심화
+> 힌트 — 대괄호가 두 번 이어지면 첫 번째 `[]` 가 **새 표**를 만든다. 고치는 대상은 그 새 표다.
 
-**문제 11.** 이름에 `Mr.` 가 들어간 승객은 몇 명인가? `str.contains` 에 `regex=False` 를 줄 때와 주지 않을 때를 비교하라.
+### 세트 4. 묶어서 요약하기
 
-> 힌트 — 정규식에서 `.` 은 "아무 글자 하나" 라는 뜻이다.
+`groupby` 로 묶고 여러 값을 한 번에 낸다(11장).
 
-**문제 12.** 객실 번호(`Cabin`)가 **있는** 승객과 **없는** 승객의 생존율을 각각 소수 셋째 자리까지 구하라.
+**문제 9.** 탑승 항구(`Embarked`)별 승객 수와 생존율(소수 셋째 자리)을 **한 표**로 만들어라.
 
-> 힌트 — `isna()` 의 반대는 `notna()` 다. 불린 마스크 앞에 `~` 를 붙여도 뒤집힌다.
+> 힌트 — `groupby('Embarked')['Survived'].agg(['count', 'mean'])`
 
-**문제 13.** 요금이 200 이상인 승객만 꺼내 `Pclass`, `Fare`, `Survived` 세 열을 **요금이 높은 순**으로 정렬하라. 몇 명이고, 그중 생존자는 몇 명인가?
+**문제 10.** `Pclass` 와 `Sex` 로 묶어 평균 요금(소수 둘째 자리)을 구하고, `unstack()` 으로 행 = 등급, 열 = 성별인 표로 바꿔라.
 
-> 힌트 — 꺼내기 → 열 고르기 → `sort_values(..., ascending=False)` 를 한 줄에 이어 쓸 수 있다.
+> 힌트 — `groupby([열1, 열2])` 의 결과는 인덱스가 두 층이다. `unstack()` 은 안쪽 층을 열로 올린다.
 
-**문제 14.** 혼자 탄 승객(`SibSp` 와 `Parch` 가 모두 0)의 `Survived`, `Fare` 두 열만 꺼낸 표의 `shape` 와 생존율(소수 셋째 자리)을 구하라.
+**문제 11.** 생존 여부(`Survived`)별로 나이의 평균·최솟값·최댓값을 구하라(소수 둘째 자리).
 
-> 힌트 — 조건 두 개를 `&` 로 잇고, 열 목록과 함께 `loc` 에 넣는다.
+> 힌트 — `agg(['mean', 'min', 'max'])`
 
-**문제 15.** ★ `t2 = t.set_index('PassengerId')` 로 인덱스를 승객 번호로 바꾼 뒤, `t2.loc[1:5]` 와 `t2.iloc[1:5]` 가 각각 **몇 행**이고 **첫 행의 승객 번호**가 무엇인지 구하라.
+### 세트 5. 가공하기 — 새 열 만들기
 
-> 힌트 — `loc` 은 라벨, `iloc` 은 위치다. 끝을 포함하는지도 다르다.
+열을 계산해 붙이고 구간으로 나누고 값을 바꾼다(9장).
+
+**준비**
+
+```python
+def family_type(row):
+    size = row['SibSp'] + row['Parch'] + 1   # 본인 포함 가족 수
+    if size == 1:
+        return 'Alone'
+    elif size <= 4:
+        return 'Small'
+    else:
+        return 'Large'
+
+t['Family_type'] = t.apply(family_type, axis=1)
+t['Family_type'].value_counts()
+```
+
+```text
+Family_type
+Alone    537
+Small    292
+Large     62
+Name: count, dtype: int64
+```
+
+**문제 12.** `Family_type` 과 `Sex` 로 생존율 피벗 테이블(소수 둘째 자리)을 만들어라. 어떤 특징이 보이는가?
+
+> 힌트 — `pd.pivot_table(t, index='Family_type', columns='Sex', values='Survived', aggfunc='mean')`
+
+**문제 13.** 요금을 `pd.cut` 으로 `[0, 10, 30, 100, 600]` 구간으로 나눈 `Fare_cut` 열을 만들고, 구간별 승객 수를 구간 순서대로 출력하라(결측 포함). 요금이 0 인 승객은 어떻게 되는가?
+
+> 힌트 — `value_counts(dropna=False).sort_index()`. 구간 `(0, 10]` 의 둥근 괄호는 무슨 뜻인가?
+
+**문제 14.** `Embarked` 를 `{'S': 0, 'C': 1, 'Q': 2}` 로 바꾼 `Embarked_num` 열을 만들어라. 값별 개수(결측 포함)와 이 열의 dtype 을 출력하라.
+
+> 힌트 — `map` 은 사전에 없는 값을 `NaN` 으로 만든다. 결측이 섞인 정수 열은 무엇이 되는가?
+
+### 세트 6. 미니 프로젝트 — 규칙으로 생존 예측하기
+
+모델 없이 **규칙**으로 예측하고, 정해진 형식의 제출 파일로 저장한다. `Title`(호칭)은 이름에서 뽑는다(V1 의 `str.extract`).
+
+**준비**
+
+```python
+train = pd.read_csv('train.csv')
+test = pd.read_csv('test.csv')
+
+for d in (train, test):   # 두 표에 똑같이 호칭 열을 만든다
+    d['Title'] = d['Name'].str.extract(r',\s*([^\.]+)\.', expand=False)
+
+def accuracy(pred, answer):
+    return (pred == answer).mean()
+
+train['Title'].value_counts().head()
+```
+
+```text
+Title
+Mr        517
+Miss      182
+Mrs       125
+Master     40
+Dr          7
+Name: count, dtype: int64
+```
+
+**문제 15.** "여자는 생존, 남자는 사망" 이라는 기준 규칙의 `train` 정확도를 소수 넷째 자리까지 구하라.
+
+> 힌트 — `(train['Sex'] == 'female').astype(int)` 가 예측이다.
+
+**문제 16.** 기준 규칙에 두 가지를 더한 `rule_v2` 의 `train` 정확도를 구하라 — ① 1·2등석 남자 어린이(`Title` 이 `Master`)는 생존 ② 요금 20 이상인 3등석 여자는 사망.
+
+> 힌트 — 예측 Series 를 만든 뒤 `pred[조건] = 1` 처럼 조건에 맞는 칸만 덮어쓴다.
+
+**문제 17.** `rule_v2` 를 `test` 에 적용해 `PassengerId`, `Survived` 두 열의 제출 표를 만들고 `submission.csv` 로 저장하라. 저장 전에 예시 파일과 **형식**(열 이름·행 수·결측)이 같은지, 기준 규칙과 예측이 다른 승객이 몇 명인지 확인하라.
+
+> 힌트 — `pd.DataFrame({'PassengerId': ..., 'Survived': ...})`, `to_csv(..., index=False)`
+
+### 도전 — 나만의 규칙
+
+`rule_v2` 를 고쳐 `train` 정확도를 더 높여 보자. 가족 규모, 나이대, 탑승 항구, 객실 번호가 있는지 등을 쓸 수 있다.
+정답은 없다. 대신 두 가지를 스스로 확인한다.
+
+- 새 규칙마다 **몇 명의 예측이 바뀌었는지** 함께 본다. 서너 명을 맞히려고 규칙 한 줄을 더했다면 우연일 가능성이 크다.
+- `train` 에만 꼭 맞춘 복잡한 규칙은 `test` 에서 오히려 틀리기 쉽다(**과적합**). 규칙은 이유를 한 문장으로 말할 수 있는 것만 남긴다.
 <!-- 연습 문제 끝 -->
 
 ---
@@ -9758,258 +9861,528 @@ seaborn 이 연속값으로 보고 색 띠를 쓰기 때문이다. 범주로 쓰
 ---
 
 <!-- 연습 정답 시작 -->
-## 연습 문제 정답 — 타이타닉에서 꺼내기
+## 연습 문제 정답 — 타이타닉 데이터 다루기
 
-풀이 코드의 출력은 **원본 `train.csv`** 에서 실행한 결과다. 합성본(`titanic-synthetic.csv`)으로 풀었다면
-각 풀이 아래의 **합성본** 줄과 비교한다. 두 벌 모두 이 책을 만들 때 실제로 실행해서 얻은 값이다.
+풀이 바로 아래 출력은 **원본 `train.csv`** 에서 실행한 결과다. 합성본으로 풀었다면 그 아래의
+"합성본으로 풀었다면" 을 본다. 두 벌 모두 이 책을 만들 때 실제로 실행해서 얻은 값이다.
 
-**문제 1.** `Name`, `Sex`, `Age` 세 열만 꺼낸 표를 만들고 `shape` 를 출력하라.
+### 세트 1. 불러오고 훑어보기
+
+준비 — 이 세트를 새로 시작한다(앞 세트에서 더한 열을 지운다):
 
 ```python
-sub = t[['Name', 'Sex', 'Age']]
-print(sub.shape)
+t = pd.read_csv('train.csv')
+```
+
+**문제 1.** `test.csv` 를 `test_df` 로 불러와 행과 열의 개수를 출력하라. `train.csv` 에는 있는데 `test.csv` 에 없는 열은 무엇인가?
+
+```python
+test_df = pd.read_csv('test.csv')
+print(test_df.shape)
+print(set(t.columns) - set(test_df.columns))
 ```
 
 ```text
-(891, 3)
+(418, 11)
+{'Survived'}
 ```
 
-합성본: `(891, 3)`
+합성본으로 풀었다면: `test.csv` 를 쓰는 문항이라 원본으로만 풀 수 있다.
 
-열을 하나만 꺼내면(`t['Name']`) Series, 리스트로 꺼내면(`t[['Name']]`) 열이 하나인 DataFrame 이다(4장).
+`test.csv` 에는 **맞혀야 할 답**(`Survived`)이 없다. 그래서 예측 대회의 문제지가 된다 — 이 연습의 마지막 세트에서 이 파일에 예측을 채운다.
 
-**문제 2.** 여자 승객(`Sex` 가 `'female'`)만 꺼내라. 몇 명인가?
+**문제 2.** `Pclass` 별 승객 수를 **비율(%)** 로 구하라. 소수 첫째 자리까지, 등급 순서대로.
 
 ```python
-women = t[t['Sex'] == 'female']
-print(len(women))
+print((t['Pclass'].value_counts(normalize=True) * 100).round(1).sort_index())
 ```
 
 ```text
-314
+Pclass
+1    24.2
+2    20.7
+3    55.1
+Name: proportion, dtype: float64
 ```
 
-합성본: `320`
+합성본으로 풀었다면:
 
-`t['Sex'] == 'female'` 은 행마다 True/False 인 Series 다. 그것을 `t[...]` 에 넣으면 True 인 행만 남는다.
+```text
+Pclass
+1    22.0
+2    21.1
+3    56.9
+Name: proportion, dtype: float64
+```
 
-**문제 3.** 1등석(`Pclass` 가 1) 승객만 꺼내라. 몇 명이고, 그중 생존자는 몇 명인가?
+`value_counts()` 는 **많은 순**으로 정렬한다. 등급 순서로 보려면 `sort_index()` 를 붙인다(10장). 결과 이름이 `proportion` 인 것도 보자 — 개수일 때는 `count` 다.
+
+**문제 3.** 승객의 평균 나이(소수 둘째 자리)와 가장 비싼 요금을 각각 출력하라.
 
 ```python
-first = t[t['Pclass'] == 1]
-print(len(first), first['Survived'].sum())
+print(round(t['Age'].mean(), 2))
+print(t['Fare'].max())
+print(t['Age'].count())
 ```
 
 ```text
-216 136
+29.7
+512.3292
+714
 ```
 
-합성본: `196 78`
+합성본으로 풀었다면:
 
-`Survived` 는 0 과 1 이라 합이 곧 생존자 수이고, 평균이 곧 생존율이다.
+```text
+29.63
+236.3879
+714
+```
 
-**문제 4.** 나이가 60세 이상인 승객을 꺼내라. 몇 명인가? 나이가 비어 있는 승객은 이 결과에 들어가는가?
+`mean()` 은 나이가 비어 있는 승객을 **건너뛰고** 평균을 낸다. 그래서 몇 명으로 낸 평균인지 `count()` 를 함께 본다(8장).
+
+### 세트 2. 원하는 행과 열 골라내기
+
+준비 — 이 세트를 새로 시작한다(앞 세트에서 더한 열을 지운다):
 
 ```python
-old = t[t['Age'] >= 60]
-print(len(old))
-print(old['Age'].isna().sum())
+t = pd.read_csv('train.csv')
+```
+
+**문제 4.** 3등석(`Pclass == 3`)이면서 생존한 승객은 몇 명인가?
+
+```python
+print(len(t[(t['Pclass'] == 3) & (t['Survived'] == 1)]))
 ```
 
 ```text
-26
-0
+119
 ```
 
-합성본: `8` · `0`
-
-결측과의 비교는 언제나 False 다. 그래서 나이를 모르는 승객은 **조용히** 빠진다 — 에러도 경고도 없다(8장).
-
-**문제 5.** **위치로** 11번째부터 20번째 행(10개)을 꺼내라. 꺼낸 행 수와 그 안의 생존자 수를 출력하라.
-
-```python
-rows = t.iloc[10:20]
-print(len(rows), rows['Survived'].sum())
-```
+합성본으로 풀었다면:
 
 ```text
-10 5
+191
 ```
 
-합성본: `10 6`
-
-`iloc[10:20]` 은 위치 10~19, 곧 10개다. 파이썬 리스트 슬라이스와 같은 규칙이다(5장).
-
-**문제 6.** 1등석 **여자** 승객만 꺼내라. 몇 명인가?
-
-```python
-fw = t[(t['Pclass'] == 1) & (t['Sex'] == 'female')]
-print(len(fw))
-```
-
-```text
-94
-```
-
-합성본: `75`
-
-파이썬의 `and` 는 쓸 수 없다 — Series 전체가 참인지 한 번에 묻게 되어 에러가 난다. 괄호를 빼면 아래처럼 된다.
+괄호를 빼면 `&` 가 `==` 보다 먼저 계산되어 에러가 난다.
 
 ```python
 # ✗ 괄호를 빼면 & 가 == 보다 먼저 계산된다
-t[t['Pclass'] == 1 & t['Sex'] == 'female']
+t[t['Pclass'] == 3 & t['Survived'] == 1]
 ```
 
 ```text
-TypeError: unsupported operand type(s) for &: 'int' and 'StringArray'
+ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
 ```
 
-**문제 7.** 승선항(`Embarked`)이 `'C'` 또는 `'Q'` 인 승객은 몇 명인가?
+**문제 5.** 요금이 100 이상인 승객의 `Name`, `Pclass`, `Fare` 만 `loc` 로 골라 앞 5행을 출력하라. 모두 몇 명인가?
 
 ```python
-cq = t[t['Embarked'].isin(['C', 'Q'])]
-print(len(cq))
+rich = t.loc[t['Fare'] >= 100, ['Name', 'Pclass', 'Fare']]
+print(rich.head())
+print(len(rich))
 ```
 
 ```text
-245
+                                        Name  Pclass      Fare
+27            Fortune, Mr. Charles Alexander       1  263.0000
+31   Spencer, Mrs. William Augustus (Mari...       1  146.5208
+88                Fortune, Miss. Mabel Helen       1  263.0000
+118                 Baxter, Mr. Quigg Edmond       1  247.5208
+195                     Lurette, Miss. Elise       1  146.5208
+53
 ```
 
-합성본: `253`
+합성본으로 풀었다면:
 
-`isin` 은 목록에 든 값이면 True 다. 승선항이 비어 있는 승객은 어느 쪽에도 들지 않는다.
+```text
+                Name  Pclass      Fare
+7     Lee, Mr. Junho       1  176.7668
+12  Shin, Mr. Woojin       1  143.6775
+17  Ko, Mrs. Chaewon       1  187.2942
+22  Jung, Mrs. Eunbi       1  129.9195
+26    Han, Mrs. Hana       1  197.2351
+80
+```
 
-**문제 8.** 요금(`Fare`)이 10 이상 30 이하인 승객은 몇 명인가?
+행 조건과 열 목록을 `loc` 하나에 넣었다. `t[t['Fare'] >= 100][[...]]` 처럼 두 번 나눠 쓰면 읽을 때는 같지만, **값을 바꿀 때** 는 연쇄 할당이 되어 반영되지 않는다(다음 세트).
+
+**문제 6.** 10세 이하 어린이의 생존율을 소수 셋째 자리까지 구하라. 전체 생존율과 비교하라.
 
 ```python
-mid = t[t['Fare'].between(10, 30)]
-print(len(mid))
+kids = t[t['Age'] <= 10]
+print(len(kids), round(kids['Survived'].mean(), 3))
+print(round(t['Survived'].mean(), 3))
 ```
 
 ```text
-321
+64 0.594
+0.384
 ```
 
-합성본: `436`
+합성본으로 풀었다면:
 
-`between` 은 기본으로 **양 끝을 포함**한다(`inclusive='both'`). `(t['Fare'] >= 10) & (t['Fare'] <= 30)` 과 같다.
+```text
+51 0.255
+0.382
+```
 
-**문제 9.** 나이가 **비어 있는** 승객만 꺼내라. 몇 명이고, 그중 생존자는 몇 명인가?
+> 합성본 주의 — 합성본은 나이와 생존 사이에 관계가 없어, 원본과 달리 어린이 생존율이 전체보다 높게 나오지 않는다.
+
+나이가 비어 있는 승객은 `<= 10` 비교에서 False 가 되어 **조용히** 빠진다. 결과 인원이 예상보다 적으면 결측부터 의심한다(8장).
+
+### 세트 3. 뷰와 복사 — 고친 것이 반영되는가
+
+준비 — 이 세트를 새로 시작한다(앞 세트에서 더한 열을 지운다):
 
 ```python
-unknown = t[t['Age'].isna()]
-print(len(unknown), unknown['Survived'].sum())
+t = pd.read_csv('train.csv')
 ```
 
-```text
-177 52
-```
-
-합성본: `177 64`
-
-`t['Age'] == float('nan')` 은 전부 False 다 — NaN 은 자기 자신과도 같지 않다. 결측은 `isna()` 로만 찾는다(8장).
-
-**문제 10.** 3등석 **남자** 승객의 평균 나이를 소수 둘째 자리까지 구하라. `loc` 로 행과 열을 한 번에 골라라.
+**문제 7.** 1등석 승객만 골라 `first_df` 로 만들고, `first_df` 에 `Fare_KRW` 열(요금 × 1500)을 더하라. 원본 `t` 에는 이 열이 생기지 않아야 한다. 두 표에 이 열이 있는지 확인하라.
 
 ```python
-age3m = t.loc[(t['Pclass'] == 3) & (t['Sex'] == 'male'), 'Age']
-print(round(age3m.mean(), 2))
+first_df = t[t['Pclass'] == 1].copy()
+first_df['Fare_KRW'] = first_df['Fare'] * 1500
+print('Fare_KRW' in first_df.columns, 'Fare_KRW' in t.columns)
 ```
 
 ```text
-26.51
+True False
 ```
 
-합성본: `29.16`
+합성본으로 풀었다면:
 
-`mean()` 은 결측을 건너뛰고 평균을 낸다. 몇 명으로 낸 평균인지는 `age3m.count()` 로 함께 본다(V5 에서 다시 본다).
+```text
+True False
+```
 
-**문제 11.** 이름에 `Mr.` 가 들어간 승객은 몇 명인가? `str.contains` 에 `regex=False` 를 줄 때와 주지 않을 때를 비교하라.
+pandas 3.0 에서는 Copy-on-Write 때문에 `.copy()` 가 없어도 원본은 바뀌지 않는다. 그래도 `.copy()` 를 쓰면 "이 표는 따로 고칠 것" 이라는 뜻이 코드에 남고, 옛 버전에서 뜨던 `SettingWithCopyWarning` 도 피한다(7장).
+
+**문제 8.** 아래 코드는 요금이 0 인 승객의 `Fare` 를 결측(`NaN`)으로 바꾸려는 것이다. 실행하면 무슨 일이 일어나는가? 이유를 말하고 올바르게 고쳐, 바뀐 개수를 확인하라.
+
+```
+temp_df = t.copy()
+temp_df[temp_df['Fare'] == 0]['Fare'] = np.nan
+```
 
 ```python
-print(t['Name'].str.contains('Mr.', regex=False).sum())
-print(t['Name'].str.contains('Mr.').sum())
+temp_df = t.copy()
+temp_df.loc[temp_df['Fare'] == 0, 'Fare'] = np.nan
+print((t['Fare'] == 0).sum(), temp_df['Fare'].isna().sum())
 ```
 
 ```text
-517
-647
+15 15
 ```
 
-합성본: `571` · `743`
+합성본으로 풀었다면:
 
-`regex=False` 를 빼면 `Mr.` 가 "Mr + 아무 글자" 로 읽혀 **`Mrs`** 까지 걸린다. 에러가 나지 않아 알아채기 어렵다. 글자 그대로 찾을 때는 `regex=False` 를 준다.
+```text
+0 0
+```
 
-**문제 12.** 객실 번호(`Cabin`)가 **있는** 승객과 **없는** 승객의 생존율을 각각 소수 셋째 자리까지 구하라.
+> 합성본 주의 — 합성본에는 요금이 0 인 승객이 없어 바뀐 개수가 0 이다 — 이 문제는 원본으로 풀어야 차이가 보인다.
+
+문제의 코드는 **연쇄 할당**이다. 첫 `[...]` 가 만든 임시 표를 고치고 그 표는 버려진다. pandas 3.0 은 `ChainedAssignmentError` 를 띄우는데 **예외가 아니라 경고**라서 코드는 끝까지 돌고 `temp_df` 는 그대로다. 행 조건과 열을 `loc` 하나에 넣으면 원본에 바로 쓴다(7장).
 
 ```python
-has = t[t['Cabin'].notna()]
-no = t[t['Cabin'].isna()]
-print(round(has['Survived'].mean(), 3), round(no['Survived'].mean(), 3))
+# ✗ 연쇄 할당 — 경고만 뜨고 temp_df 는 바뀌지 않는다
+temp_df = t.copy()
+temp_df[temp_df['Fare'] == 0]['Fare'] = np.nan
+print(temp_df['Fare'].isna().sum())
 ```
 
 ```text
-0.667 0.3
+0
+ChainedAssignmentError: A value is being set on a copy of a DataFrame or Series through chained assignment.
+Such chained assignment never works to update the original DataFrame or Series, because the intermediate object on which we are setting values always behaves as a copy (due to Copy-on-Write).
+
+Try using '.loc[row_indexer, col_indexer] = value' instead, to perform the assignment in a single step.
+
+See the documentation for a more detailed explanation: https://pandas.pydata.org/pandas-docs/stable/user_guide/copy_on_write.html#chained-assignment
 ```
 
-합성본: `0.392 0.378`
+### 세트 4. 묶어서 요약하기
 
-원본에서는 두 생존율이 크게 다르다. 결측이 **그 자체로 정보**일 때가 있다 — 객실 번호가 남아 있는 승객은 대개 상위 등급 승객이었다. 그래서 이 열의 결측을 지우거나 아무 값으로 채우기 전에 먼저 이렇게 나눠 본다. **합성본에서는 두 값이 거의 같다** — 합성본은 결측 **개수**만 원본과 맞추고 자리는 무작위로 골랐기 때문이다. 합성 데이터로는 이런 발견을 할 수 없다는 것도 함께 기억하자.
-
-**문제 13.** 요금이 200 이상인 승객만 꺼내 `Pclass`, `Fare`, `Survived` 세 열을 **요금이 높은 순**으로 정렬하라. 몇 명이고, 그중 생존자는 몇 명인가?
+준비 — 이 세트를 새로 시작한다(앞 세트에서 더한 열을 지운다):
 
 ```python
-rich = t.loc[t['Fare'] >= 200, ['Pclass', 'Fare', 'Survived']].sort_values('Fare', ascending=False)
-print(len(rich), rich['Survived'].sum())
+t = pd.read_csv('train.csv')
 ```
 
-```text
-20 14
-```
-
-합성본: `11 4`
-
-행 조건과 열 목록을 `loc` 하나에 넣었다. 정렬은 꺼낸 **뒤에** 한다 — 891행 전체를 정렬할 필요가 없다(10장).
-
-**문제 14.** 혼자 탄 승객(`SibSp` 와 `Parch` 가 모두 0)의 `Survived`, `Fare` 두 열만 꺼낸 표의 `shape` 와 생존율(소수 셋째 자리)을 구하라.
+**문제 9.** 탑승 항구(`Embarked`)별 승객 수와 생존율(소수 셋째 자리)을 **한 표**로 만들어라.
 
 ```python
-alone = t.loc[(t['SibSp'] == 0) & (t['Parch'] == 0), ['Survived', 'Fare']]
-print(alone.shape)
-print(round(alone['Survived'].mean(), 3))
+print(t.groupby('Embarked')['Survived'].agg(['count', 'mean']).round(3))
+print(t['Embarked'].isna().sum())
 ```
 
 ```text
-(537, 2)
-0.304
+          count   mean
+Embarked              
+C           168  0.554
+Q            77  0.390
+S           644  0.337
+2
 ```
 
-합성본: `(446, 2)` · `0.399`
+합성본으로 풀었다면:
 
-`SibSp + Parch == 0` 으로 써도 같다. 조건 하나로 줄일 수 있으면 읽기 쉽다.
+```text
+          count   mean
+Embarked              
+C           166  0.416
+Q            87  0.391
+S           636  0.369
+2
+```
 
-**문제 15.** ★ `t2 = t.set_index('PassengerId')` 로 인덱스를 승객 번호로 바꾼 뒤, `t2.loc[1:5]` 와 `t2.iloc[1:5]` 가 각각 **몇 행**이고 **첫 행의 승객 번호**가 무엇인지 구하라.
+항구가 비어 있는 승객은 `groupby` 가 기본으로 **빼고** 묶는다(`dropna=True`). 그래서 세 항구의 인원을 더해도 전체보다 적다(11장).
+
+**문제 10.** `Pclass` 와 `Sex` 로 묶어 평균 요금(소수 둘째 자리)을 구하고, `unstack()` 으로 행 = 등급, 열 = 성별인 표로 바꿔라.
 
 ```python
-t2 = t.set_index('PassengerId')
-a = t2.loc[1:5]
-b = t2.iloc[1:5]
-print(len(a), a.index[0])
-print(len(b), b.index[0])
+print(t.groupby(['Pclass', 'Sex'])['Fare'].mean().round(2).unstack())
 ```
 
 ```text
-5 1
-4 2
+Sex     female   male
+Pclass               
+1       106.13  67.23
+2        21.97  19.74
+3        16.12  12.66
 ```
 
-합성본: `5 1` · `4 2`
+합성본으로 풀었다면:
 
-`loc[1:5]` 은 **승객 번호** 1~5 — 라벨 슬라이스라 끝(5)을 **포함**한다. `iloc[1:5]` 는 **위치** 1~4 — 끝을 포함하지 않고, 위치 1 은 승객 번호 2 다. 같은 `1:5` 가 다른 행을 가리킨다(5장).
+```text
+Sex     female   male
+Pclass               
+1        90.06  89.81
+2        20.09  21.82
+3        15.46  15.31
+```
 
-### 이 문제에서 가져갈 것
+같은 표를 `pd.pivot_table(t, index='Pclass', columns='Sex', values='Fare', aggfunc='mean')` 로도 만든다(V2).
 
-- **결측은 조건에서 조용히 빠진다**(문제 4, 9, 12). 결과 행 수가 예상보다 적으면 결측부터 의심한다.
-- **`loc` 과 `iloc` 은 같은 `1:5` 로 다른 행을 꺼낸다**(문제 15). 인덱스가 0, 1, 2… 일 때만 우연히 비슷해 보인다.
-- **에러가 나지 않았다고 맞은 것이 아니다**(문제 11). `regex` 기본값 하나로 결과가 백 명 넘게 달라진다.
+**문제 11.** 생존 여부(`Survived`)별로 나이의 평균·최솟값·최댓값을 구하라(소수 둘째 자리).
+
+```python
+print(t.groupby('Survived')['Age'].agg(['mean', 'min', 'max']).round(2))
+```
+
+```text
+           mean   min   max
+Survived                   
+0         30.63  1.00  74.0
+1         28.34  0.42  80.0
+```
+
+합성본으로 풀었다면:
+
+```text
+           mean  min   max
+Survived                  
+0         29.13  0.5  63.4
+1         30.43  0.5  70.5
+```
+
+두 집단의 평균 나이는 별로 다르지 않다. 그렇다고 "나이는 생존과 상관없다" 고 말할 수는 없다 — 문제 6 처럼 **어린이만 떼어 보면** 생존율이 뚜렷이 다르다. 평균 하나로 분포 전체를 말하지 않는다(V4 의 상자그림).
+
+### 세트 5. 가공하기 — 새 열 만들기
+
+준비 — 이 세트를 새로 시작한다(앞 세트에서 더한 열을 지운다):
+
+```python
+t = pd.read_csv('train.csv')
+
+def family_type(row):
+    size = row['SibSp'] + row['Parch'] + 1   # 본인 포함 가족 수
+    if size == 1:
+        return 'Alone'
+    elif size <= 4:
+        return 'Small'
+    else:
+        return 'Large'
+
+t['Family_type'] = t.apply(family_type, axis=1)
+```
+
+**문제 12.** `Family_type` 과 `Sex` 로 생존율 피벗 테이블(소수 둘째 자리)을 만들어라. 어떤 특징이 보이는가?
+
+```python
+print(pd.pivot_table(t, index='Family_type', columns='Sex', values='Survived', aggfunc='mean').round(2))
+```
+
+```text
+Sex          female  male
+Family_type              
+Alone          0.79  0.16
+Large          0.27  0.03
+Small          0.81  0.32
+```
+
+합성본으로 풀었다면:
+
+```text
+Sex          female  male
+Family_type              
+Alone          0.75  0.18
+Large          0.79  0.18
+Small          0.69  0.19
+```
+
+> 합성본 주의 — 합성본에는 가족 규모와 생존 사이의 관계가 없어 이 특징이 보이지 않는다.
+
+원본에서는 **대가족(`Large`)이면 여자도 생존율이 크게 낮다** — 성별만으로는 설명되지 않는 차이다. 다만 칸마다 **몇 명**으로 낸 비율인지 `aggfunc='count'` 로 함께 보자 — 인원이 적은 칸의 비율은 크게 흔들린다(V2, V5).
+
+**문제 13.** 요금을 `pd.cut` 으로 `[0, 10, 30, 100, 600]` 구간으로 나눈 `Fare_cut` 열을 만들고, 구간별 승객 수를 구간 순서대로 출력하라(결측 포함). 요금이 0 인 승객은 어떻게 되는가?
+
+```python
+t['Fare_cut'] = pd.cut(t['Fare'], bins=[0, 10, 30, 100, 600])
+print(t['Fare_cut'].value_counts(dropna=False).sort_index())
+```
+
+```text
+Fare_cut
+(0.0, 10.0]       321
+(10.0, 30.0]      321
+(30.0, 100.0]     181
+(100.0, 600.0]     53
+NaN                15
+Name: count, dtype: int64
+```
+
+합성본으로 풀었다면:
+
+```text
+Fare_cut
+(0, 10]       214
+(10, 30]      436
+(30, 100]     161
+(100, 600]     80
+Name: count, dtype: int64
+```
+
+> 합성본 주의 — 합성본에는 요금이 0 인 승객이 없어 `NaN` 이 생기지 않는다 — 원본으로 풀어야 함정이 보인다.
+
+`pd.cut` 의 구간은 기본으로 **왼쪽이 열려** 있다(`(0, 10]` 은 0 초과 10 이하). 그래서 요금 0 은 어느 구간에도 들지 않고 `NaN` 이 된다 — 에러 없이. `include_lowest=True` 를 주면 첫 구간이 `[0, 10]` 이 되어 0 도 들어간다.
+
+**문제 14.** `Embarked` 를 `{'S': 0, 'C': 1, 'Q': 2}` 로 바꾼 `Embarked_num` 열을 만들어라. 값별 개수(결측 포함)와 이 열의 dtype 을 출력하라.
+
+```python
+t['Embarked_num'] = t['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
+print(t['Embarked_num'].value_counts(dropna=False))
+print(t['Embarked_num'].dtype)
+```
+
+```text
+Embarked_num
+0.0    644
+1.0    168
+2.0     77
+NaN      2
+Name: count, dtype: int64
+float64
+```
+
+합성본으로 풀었다면:
+
+```text
+Embarked_num
+0.0    636
+1.0    166
+2.0     87
+NaN      2
+Name: count, dtype: int64
+float64
+```
+
+항구가 비어 있던 승객은 `NaN` 으로 남고, 그래서 정수가 아니라 **실수(`float64`)** 열이 된다(9장). 수업 노트북은 이 문제 앞에서 결측을 `'S'` 로 채웠기 때문에 결측이 없었다 — **같은 코드도 앞에서 무엇을 했는지에 따라 결과가 다르다**(13장).
+
+### 세트 6. 미니 프로젝트 — 규칙으로 생존 예측하기
+
+준비 — 이 세트를 새로 시작한다(앞 세트에서 더한 열을 지운다):
+
+```python
+t = pd.read_csv('train.csv')
+
+train = pd.read_csv('train.csv')
+test = pd.read_csv('test.csv')
+
+for d in (train, test):   # 두 표에 똑같이 호칭 열을 만든다
+    d['Title'] = d['Name'].str.extract(r',\s*([^\.]+)\.', expand=False)
+
+def accuracy(pred, answer):
+    return (pred == answer).mean()
+
+```
+
+**문제 15.** "여자는 생존, 남자는 사망" 이라는 기준 규칙의 `train` 정확도를 소수 넷째 자리까지 구하라.
+
+```python
+pred0 = (train['Sex'] == 'female').astype(int)
+print(round(accuracy(pred0, train['Survived']), 4))
+```
+
+```text
+0.7868
+```
+
+합성본으로 풀었다면: `test.csv` 를 쓰는 문항이라 원본으로만 풀 수 있다.
+
+이 기준 규칙이 대회가 주는 예시 파일(`gender_submission.csv`)의 규칙이다. 새 규칙은 **이것보다 나아야** 의미가 있다.
+
+**문제 16.** 기준 규칙에 두 가지를 더한 `rule_v2` 의 `train` 정확도를 구하라 — ① 1·2등석 남자 어린이(`Title` 이 `Master`)는 생존 ② 요금 20 이상인 3등석 여자는 사망.
+
+```python
+def rule_v2(d):
+    pred = (d['Sex'] == 'female').astype(int)
+    pred[(d['Title'] == 'Master') & (d['Pclass'] < 3)] = 1
+    pred[(d['Sex'] == 'female') & (d['Pclass'] == 3) & (d['Fare'] >= 20)] = 0
+    return pred
+
+print(round(accuracy(rule_v2(train), train['Survived']), 4))
+```
+
+```text
+0.8215
+```
+
+합성본으로 풀었다면: `test.csv` 를 쓰는 문항이라 원본으로만 풀 수 있다.
+
+`pred` 는 함수 안에서 새로 만든 Series 라 `pred[조건] = 값` 이 그대로 반영된다(연쇄 할당이 아니다). 규칙 ② 는 "요금이 높은 3등석 여자 = 대가족" 이라는 관찰에서 왔다 — 세트 5 의 가족 규모 표와 이어 보자.
+
+**문제 17.** `rule_v2` 를 `test` 에 적용해 `PassengerId`, `Survived` 두 열의 제출 표를 만들고 `submission.csv` 로 저장하라. 저장 전에 예시 파일과 **형식**(열 이름·행 수·결측)이 같은지, 기준 규칙과 예측이 다른 승객이 몇 명인지 확인하라.
+
+```python
+submission = pd.DataFrame({'PassengerId': test['PassengerId'], 'Survived': rule_v2(test)})
+sample = pd.read_csv('gender_submission.csv')
+
+print(list(submission.columns) == list(sample.columns))
+print(len(submission) == len(sample))
+print(submission.isna().sum().sum() == 0)
+print((submission['Survived'] != sample['Survived']).sum())
+submission.to_csv('submission.csv', index=False)
+```
+
+```text
+True
+True
+True
+15
+```
+
+합성본으로 풀었다면: `test.csv` 를 쓰는 문항이라 원본으로만 풀 수 있다.
+
+`index=False` 를 빼면 인덱스가 첫 열로 저장되어 **형식이 틀린 파일**이 된다. 제출 전에 이렇게 형식을 코드로 점검하는 습관을 들이자.
+
+### 이 연습에서 가져갈 것
+
+- **결측은 조건·평균·묶기에서 조용히 빠진다**(문제 3, 6, 9). 결과 인원이 예상과 다르면 결측부터 센다.
+- **고친 것이 반영됐는지 확인한다**(문제 8). 연쇄 할당은 예외가 아니라 경고라서 코드가 끝까지 돈다.
+- **같은 코드도 앞에서 무엇을 했는지에 따라 결과가 다르다**(문제 14). 셀을 위에서부터 다시 실행해 본다(13장).
+- **합성 데이터는 모양만 같다**(합성본 주의). 관계를 찾는 분석은 진짜 데이터로 한다.
 <!-- 연습 정답 끝 -->

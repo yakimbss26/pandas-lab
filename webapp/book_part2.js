@@ -50,7 +50,7 @@ var APPX_BEGIN = '<!-- 2부 부록 시작 -->';
 var APPX_END = '<!-- 2부 부록 끝 -->';
 var APPX_BEFORE = /^### 이 교재를 만들 때 쓴 버전/m;
 
-/* 1부 연습 문제 "타이타닉에서 꺼내기" — docs/scripts/make_titanic_drill.py 가 만든다(숫자는 실행 결과).
+/* 1부 연습 문제 "타이타닉 데이터 다루기" — docs/scripts/make_titanic_drill.py 가 만든다(숫자는 실행 결과).
  * 문제는 1부 끝(2부 표지 바로 앞), 정답은 책 맨 끝. 초고가 없으면 건너뛴다. */
 var DRILL_Q = 'drill-questions.md', DRILL_A = 'drill-answers.md';
 var DQ_BEGIN = '<!-- 연습 문제 시작 -->', DQ_END = '<!-- 연습 문제 끝 -->';

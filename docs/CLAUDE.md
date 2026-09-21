@@ -28,7 +28,7 @@ python -X utf8 docs/scripts/probe_viz.py             # 정정표-시각화-실�
 python -X utf8 docs/scripts/make_titanic_drill.py    # 1부 연습 문제 + 정답 (docs/draft/drill-*.md)
 ```
 
-`make_titanic_drill.py` 는 15문항의 풀이를 **원본 `train.csv` 와 합성본 `data/titanic-synthetic.csv` 에서
+`make_titanic_drill.py` 는 17문항의 풀이를 **원본 `train.csv` 와 합성본 `data/titanic-synthetic.csv` 에서
 각각 실행**해 정답을 두 벌 만든다. 문항을 고치면 이 스크립트 → `node webapp/book_part2.js --force` →
 `verify_md.py` 순서로 돈다. 풀이에서 경고가 하나라도 나면 스크립트가 멈춘다.
 

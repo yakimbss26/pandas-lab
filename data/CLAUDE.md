@@ -5,7 +5,7 @@ GitHub Pages 가 그대로 서빙한다: `https://yakimbss26.github.io/pandas-la
 
 | 파일 | 무엇 | 누가 만드나 |
 |:---|:---|:---|
-| `titanic-synthetic.csv` | 타이타닉 합성본(891행 × 12열). 1부 연습 문제 "타이타닉에서 꺼내기" 를 `train.csv` 없이 풀 때 쓴다 | `webapp/build.js` 의 `writeSyntheticCsv` — **손으로 고치지 않는다** |
+| `titanic-synthetic.csv` | 타이타닉 합성본(891행 × 12열). 1부 연습 문제 "타이타닉 데이터 다루기" 를 `train.csv` 없이 풀 때 쓴다 | `webapp/build.js` 의 `writeSyntheticCsv` — **손으로 고치지 않는다** |
 
 ## 지킬 것
 
@@ -15,4 +15,4 @@ GitHub Pages 가 그대로 서빙한다: `https://yakimbss26.github.io/pandas-la
 - **합성본을 바꾸면 연습 문제의 합성본 정답도 바뀐다.** `docs/scripts/make_titanic_drill.py` →
   `node webapp/book_part2.js --force` → `verify_md.py` 순서로 다시 만든다.
 - 합성본은 결측 **개수**만 원본과 같고 자리는 무작위다. 그래서 "객실 번호가 있으면 생존율이 높다" 같은
-  **관계는 재현되지 않는다**(연습 문제 12번 풀이가 이 점을 밝힌다).
+  **관계는 재현되지 않는다**(연습 정답의 "합성본 주의" 가 문항마다 이 점을 밝힌다).
