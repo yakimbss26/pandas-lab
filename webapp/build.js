@@ -639,6 +639,31 @@ function buildSingle(mods) {
   ].join('\n');
 }
 
+// ─────────────────────────────────────────────── 합성 타이타닉 CSV
+//
+// 교재의 "타이타닉에서 꺼내기" 연습 문제(14장 뒤)는 train.csv 로 푼다. 학교 밖에서 원본이 없는 학생은
+// 사이트의 합성본을 받아 같은 코드로 푼다 — 부록에 정답이 두 벌(원본 / 합성) 있다.
+// 합성 데이터라 공개해도 된다(LICENSE §2-1). 원본이 없어 data.js 를 보존할 때는 이 파일도 그대로 둔다.
+var SYNTH_CSV = path.join(ROOT, 'data', 'titanic-synthetic.csv');
+var TITANIC_COLS = ['PassengerId', 'Survived', 'Pclass', 'Name', 'Sex', 'Age', 'SibSp', 'Parch',
+  'Ticket', 'Fare', 'Cabin', 'Embarked'];
+
+function csvCell(v) {
+  if (v === null || v === undefined || (typeof v === 'number' && isNaN(v))) return '';
+  var s = String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function writeSyntheticCsv(records, file) {
+  var lines = [TITANIC_COLS.join(',')];
+  records.forEach(function (r) {
+    lines.push(TITANIC_COLS.map(function (c) { return csvCell(r[c]); }).join(','));
+  });
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, lines.join('\n') + '\n', 'utf8');
+  console.log('  -> ' + path.relative(ROOT, file) + ' (' + records.length + '행, 합성)');
+}
+
 // ─────────────────────────────────────────────── main
 
 function main() {
@@ -654,6 +679,7 @@ function main() {
       else console.log('  ! data.js 도 없다. 수업자료/ 없이는 첫 빌드를 할 수 없다');
     } else {
       var n = writeData(sets);
+      if (sets.titanic) writeSyntheticCsv(sets.titanic.records, SYNTH_CSV);
       Object.keys(sets).forEach(function (k) {
         var s = sets[k];
         var rowsN = s.records ? s.records.length : s.rows;

@@ -32,7 +32,8 @@ var ROOT = path.resolve(__dirname, '..', '..');
 var STRICT_TARGETS = [
   'webapp/src/core/data.js',
   'pandas-lab.html',
-  'index.html'
+  'index.html',
+  'data/titanic-synthetic.csv'    // 연습 문제용 합성본 — 사이트에서 그대로 내려받는 파일이다
 ];
 
 var EXCERPT_TARGETS = [

@@ -15,6 +15,8 @@
  *   4. 0.1 버전 표에 matplotlib · seaborn, 0.2 데이터 표에 2부 파일 넷을 더한다 (없을 때만)
  *   5. 부록 끝의 버전 표 앞에 2부 정정 절(docs/draft/v-appendix.md)을 넣는다
  *      (`<!-- 2부 부록 시작 -->` ~ `<!-- 2부 부록 끝 -->`). 부록 버전 표의 seaborn 행도 고친다.
+ *   6. 1부 연습 문제(docs/draft/drill-questions.md)를 2부 표지 앞에, 정답(drill-answers.md)을 책 맨 끝에 넣는다
+ *      둘 다 docs/scripts/make_titanic_drill.py 가 원본·합성본에서 실제로 풀어 만든다
  *
  * 끼워 넣은 뒤에는 반드시:
  *   python -X utf8 webapp/test/verify_md.py                (0 실패 확인)
@@ -47,6 +49,21 @@ var APPX = 'v-appendix.md';
 var APPX_BEGIN = '<!-- 2부 부록 시작 -->';
 var APPX_END = '<!-- 2부 부록 끝 -->';
 var APPX_BEFORE = /^### 이 교재를 만들 때 쓴 버전/m;
+
+/* 1부 연습 문제 "타이타닉에서 꺼내기" — docs/scripts/make_titanic_drill.py 가 만든다(숫자는 실행 결과).
+ * 문제는 1부 끝(2부 표지 바로 앞), 정답은 책 맨 끝. 초고가 없으면 건너뛴다. */
+var DRILL_Q = 'drill-questions.md', DRILL_A = 'drill-answers.md';
+var DQ_BEGIN = '<!-- 연습 문제 시작 -->', DQ_END = '<!-- 연습 문제 끝 -->';
+var DA_BEGIN = '<!-- 연습 정답 시작 -->', DA_END = '<!-- 연습 정답 끝 -->';
+
+/* begin~end 사이를 text 로 바꾼다. 없으면 at(book) 이 돌려준 자리에 새로 넣는다. */
+function putBetween(book, begin, end, text, at) {
+  var block = [begin, text, end].join('\n');
+  var b = book.indexOf(begin), e = book.indexOf(end);
+  if (b >= 0 && e > b) return book.slice(0, b) + block + book.slice(e + end.length);
+  var pos = at(book);
+  return book.slice(0, pos) + block + '\n\n---\n\n' + book.slice(pos);
+}
 
 var PART1_COVER = [
   PART1_MARK,
@@ -91,7 +108,8 @@ var DATA_ROWS = [
   '| `seoul_temp_day.csv` | 서울 일별 기온 (기상청) — 2부 | 42,397행 × 5열 |',
   '| `busan_rain_day.csv` | 부산 일별 강수량 (기상청) — 2부 | 43,100행 × 3열 |',
   '| `seoul_temp.csv` | 서울 연별 기온 (기상청) — 2부 | 112행 × 5열 |',
-  '| `korea_pop.csv` | 시도별 연령별 인구 (행정안전부) — 2부 | 18행 × 310열 |'
+  '| `korea_pop.csv` | 시도별 연령별 인구 (행정안전부) — 2부 | 18행 × 310열 |',
+  '| `titanic-synthetic.csv` | 타이타닉 합성본 — `train.csv` 가 없을 때 연습 문제용. 사이트 `data/` 에서 받는다 | 891행 × 12열 |'
 ];
 
 function readParts() {
@@ -188,6 +206,19 @@ function main() {
     book = book.slice(0, ap) + appxBlock + '\n' + book.slice(ap);
   }
   book = book.replace('| seaborn | 설치되어 있지 않음 |', '| seaborn | 0.13.2 (2부) |');
+
+  // ── 2-2. 1부 연습 문제(2부 표지 앞)와 그 정답(책 맨 끝)
+  if (fs.existsSync(path.join(DRAFT, DRILL_Q)) && fs.existsSync(path.join(DRAFT, DRILL_A))) {
+    var dq = fs.readFileSync(path.join(DRAFT, DRILL_Q), 'utf8').replace(/\r\n/g, '\n').trim();
+    var da = fs.readFileSync(path.join(DRAFT, DRILL_A), 'utf8').replace(/\r\n/g, '\n').trim();
+    book = putBetween(book, DQ_BEGIN, DQ_END, dq, function (bk) { return bk.indexOf(BEGIN); });
+    if (book.indexOf(DA_BEGIN) < 0) {
+      book = book.replace(/\s*$/, '') + '\n\n---\n\n' + [DA_BEGIN, da, DA_END].join('\n') + '\n';
+    } else {
+      book = putBetween(book, DA_BEGIN, DA_END, da, null);
+    }
+    console.log('  연습 문제: 1부 끝에 문제, 책 끝에 정답');
+  }
 
   // ── 3. 목차
   var t0 = book.indexOf('## 목차');

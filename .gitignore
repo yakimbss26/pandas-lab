@@ -7,6 +7,7 @@
 docs/draft/*
 # 2부 초고는 정본이다(book_part2.js 가 읽는다). 커밋한다.
 !docs/draft/v*.md
+!docs/draft/drill-*.md
 
 # 교재 검증이 만드는 파일 (to_pickle / to_csv / savefig 예제가 실제로 파일을 쓴다)
 *.pickle
